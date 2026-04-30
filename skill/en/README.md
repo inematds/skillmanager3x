@@ -1,8 +1,7 @@
 # Session-management skills
 
 Three separate skills, each with one clear job and disjoint triggers. They replace the
-old monolithic `session-handoff` and the combined `session-memory-manager` package
-(both archived in `_archive/`).
+old monolithic `session-handoff` and the combined `session-memory-manager` package.
 
 ## Layout
 
@@ -10,8 +9,7 @@ old monolithic `session-handoff` and the combined `session-memory-manager` packa
 skill\
 ├── session-handoff\SKILL.md       end-of-session (before /clear or agent swap)
 ├── session-statusline\SKILL.md    operational checkpoint during active work
-├── memory-audit\SKILL.md          deep audit of memory / CLAUDE.md
-└── _archive\                      previous versions (historical reference)
+└── memory-audit\SKILL.md          deep audit of memory / CLAUDE.md
 ```
 
 ## When to use which
@@ -104,11 +102,3 @@ For the Claude Code harness to recognize the skills, they need to live in one of
 Copy the three folders (`session-handoff`, `session-statusline`, `memory-audit`) to the chosen destination. Each folder with its `SKILL.md` inside — don't flatten.
 
 To verify they were registered, use `/skills` in Claude Code (or check the registry at the start of the conversation).
-
-## Archived in `_archive\`
-
-- `SKILL.md.original` — old monolithic version of `session-handoff`.
-- `skill.zip` — `session-memory-manager` package (three modes in one skill, discarded).
-- `session-memory-manager-extracted\` — extracted zip for reference.
-
-Kept as history. Do not use.

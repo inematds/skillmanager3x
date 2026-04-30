@@ -23,8 +23,7 @@ skill/
 │   ├── session-handoff/     # End-of-session context handoff
 │   ├── session-statusline/  # Quick in-session checkpoint
 │   └── memory-audit/        # Deep memory/CLAUDE.md review
-├── pt/                  # Portuguese translations (identical structure)
-└── _archive/            # Legacy versions — do not use
+└── pt/                  # Portuguese translations (identical structure)
 ```
 
 ## Skill File Format

@@ -12,11 +12,10 @@ skill/
 │   ├── session-handoff/SKILL.md
 │   ├── session-statusline/SKILL.md
 │   └── memory-audit/SKILL.md
-├── pt/                  versões em português (+ README detalhado)
-│   ├── session-handoff/SKILL.md
-│   ├── session-statusline/SKILL.md
-│   └── memory-audit/SKILL.md
-└── _archive/            versões antigas (histórico, não usar)
+└── pt/                  versões em português (+ README detalhado)
+    ├── session-handoff/SKILL.md
+    ├── session-statusline/SKILL.md
+    └── memory-audit/SKILL.md
 ```
 
 Os READMEs em `skill/en/` e `skill/pt/` cobrem decisões de design, mudanças vs. versões anteriores e dicas avançadas. Este README do raiz é a porta de entrada.
@@ -200,12 +199,3 @@ Para verificar que registrou, use `/skills` no Claude Code.
 `skill/en/` e `skill/pt/` têm a mesma estrutura. Os campos `name` e `description` do frontmatter ficam em inglês nas duas (pra triggering consistente do harness), mas a `description` **inclui gatilhos em português** quando aplicável (`"vou dar /clear"`, `"encerrar sessão"`, etc.).
 
 Ao editar uma skill, sincronize as duas versões.
-
-## Histórico — `skill/_archive/`
-
-Versões antigas mantidas só como referência:
-
-- `SKILL.md.original` — versão monolítica antiga do `session-handoff`.
-- `skill.zip` / `session-memory-manager-extracted/` — pacote `session-memory-manager` (três modos numa skill só, descartado).
-
-**Não usar.** Os READMEs detalhados em `skill/en/` e `skill/pt/` explicam o que mudou e por quê.
