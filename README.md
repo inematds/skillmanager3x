@@ -2,6 +2,10 @@
 
 Biblioteca de **skills de gestão de sessão** para o [Claude Code](https://claude.ai/code). Três templates pequenos e disjuntos que ajudam a manter contexto, memória e transições entre sessões sob controle.
 
+## 📖 Guia de uso
+
+Guia completo (landing + passo a passo): **https://inematds.github.io/skillmanager3x/guia/**
+
 Não há build, dependências nem código executável: cada skill é uma pasta com um `SKILL.md` (markdown + frontmatter YAML) que o Claude Code carrega quando o usuário fala um dos gatilhos.
 
 ## Estrutura
