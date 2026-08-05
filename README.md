@@ -20,6 +20,11 @@ skill/
     ├── session-handoff/SKILL.md
     ├── session-statusline/SKILL.md
     └── memory-audit/SKILL.md
+
+statusline-cmd/          barra de status do terminal (bash, opcional)
+├── statusline-command.sh
+├── install.sh
+└── README.md
 ```
 
 Os READMEs em `skill/en/` e `skill/pt/` cobrem decisões de design, mudanças vs. versões anteriores e dicas avançadas. Este README do raiz é a porta de entrada.
@@ -197,6 +202,38 @@ cp -r skill/pt/memory-audit       ~/.claude/skills/
 > Cada pasta vai inteira, com o `SKILL.md` dentro — não achate.
 
 Para verificar que registrou, use `/skills` no Claude Code.
+
+## Bônus: `statusline-cmd` — a barra de status do terminal
+
+Além das skills, o repo traz uma **statusline** para o Claude Code: a linha fixa que aparece abaixo do input, mostrando onde você está, com qual modelo, quanto de contexto sobrou e quanto do seu limite já foi.
+
+```
+nmaldaner@spark-922b:~/projetos/wifi Opus 5/low ctx 10% 5h:24%→00:10 w:29%→10/08 21:00 d:109.6M
+```
+
+| Campo | Significado |
+|---|---|
+| `user@host:cwd` | usuário, máquina e diretório atual |
+| `Opus 5/low` | modelo e nível de esforço da sessão (acompanha o `/model`) |
+| `ctx 10%` | quanto da janela de contexto já foi usado |
+| `5h:24%→00:10` | limite de 5 horas usado e hora do reset |
+| `w:29%→10/08 21:00` | limite semanal usado e reset |
+| `d:109.6M` | tokens somados hoje, em todas as sessões locais |
+
+**O comando:**
+
+```bash
+git clone https://github.com/inematds/skillmanager3x
+bash skillmanager3x/statusline-cmd/install.sh
+```
+
+O instalador copia o script para `~/.claude/statusline-command.sh`, registra o bloco `statusLine` no `~/.claude/settings.json` **preservando o resto do arquivo** (com backup `.bak`) e mostra uma prévia. A barra aparece no próximo render — não precisa reiniciar sessão.
+
+Remover: `bash statusline-cmd/install.sh --uninstall`.
+
+Requisitos: `jq`, `curl`, `python3` e o `date` do GNU. Os limites 5h/semanal vêm do endpoint `api/oauth/usage` usando **as suas próprias credenciais** (`~/.claude/.credentials.json`) — nada de token vai no repo. Detalhes e personalização em [`statusline-cmd/README.md`](statusline-cmd/README.md).
+
+> A skill `session-statusline` e a pasta `statusline-cmd` têm nomes parecidos e propósitos diferentes: a skill escreve um **checkpoint em texto** quando você pede; a pasta instala a **barra fixa** do terminal.
 
 ## Convenção en/pt
 

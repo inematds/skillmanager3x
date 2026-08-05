@@ -107,6 +107,7 @@
     <a class="sec" href="#pre">Pré-requisitos</a>
     <a class="sec" href="#guia">Guia de uso</a>
     <a class="sec" href="#exemplos">Exemplos</a>
+    <a class="sec" href="#statusline">Statusline</a>
     <a class="sec" href="#roadmap">Roadmap</a>
     <button class="tgl" id="themeToggle" aria-label="Alternar tema" title="Alternar tema">🌙</button>
     <a class="btn" href="https://github.com/inematds/skillmanager3x" target="_blank" rel="noopener">GitHub</a>
@@ -290,6 +291,44 @@ continuar</pre>
 - Duplicação: feedback_pr_size.md e feedback_review_style.md
 - Stale: reference_grafana.md aponta pra dashboard que mudou de URL</pre>
   </div>
+</div></section>
+
+<section id="statusline"><div class="wrap">
+  <span class="chip">Bônus · statusline-cmd</span>
+  <h2>A barra que te diz onde você está — e quanto sobrou</h2>
+  <p class="sub">Fora as três skills, o repo traz uma <strong>statusline</strong> pro Claude Code: a linha fixa abaixo do input, com diretório, modelo, esforço, contexto restante e quanto do seu limite já foi embora. Um comando pra instalar.</p>
+
+<pre><span class="c"># o que aparece no terminal</span>
+nei@maquina:~/projetos/wifi <span class="s">Opus 5/low</span> ctx 10% 5h:24%→00:10 w:29%→10/08 21:00 d:109.6M</pre>
+
+  <div class="grid g3">
+    <div class="card"><h3>🧭 Onde e com quê</h3><p><code>user@host:cwd</code> mais <code>Opus 5/low</code> — o modelo e o nível de esforço da sessão, acompanhando o que você escolheu no <code>/model</code>.</p></div>
+    <div class="card"><h3>🪟 Quanto de contexto</h3><p><code>ctx 10%</code> — o quanto da janela já foi usado. É o número que diz se dá pra continuar ou se está na hora de um handoff.</p></div>
+    <div class="card"><h3>⏳ Quanto de limite</h3><p><code>5h:24%→00:10</code> e <code>w:29%→10/08 21:00</code> — uso e horário de reset das janelas de 5 horas e semanal. <code>d:109.6M</code> são os tokens do dia.</p></div>
+  </div>
+
+  <div class="step" style="margin-top:34px"><div class="b">1</div><div>
+    <h3>Instale com um comando</h3>
+    <p>O script copia a statusline para <code>~/.claude/</code> e registra o bloco <code>statusLine</code> no seu <code>settings.json</code> — preservando o resto do arquivo, com backup <code>.bak</code>.</p>
+<pre><span class="k">git</span> clone <span class="s">https://github.com/inematds/skillmanager3x</span>
+<span class="k">bash</span> skillmanager3x/statusline-cmd/install.sh</pre>
+  </div></div>
+
+  <div class="step"><div class="b">2</div><div>
+    <h3>Confira a prévia</h3>
+    <p>O instalador imprime a linha já montada com os seus dados. Ela aparece no próximo render do Claude Code — nenhuma sessão precisa ser reiniciada.</p>
+<pre><span class="c"># dependências, se faltar alguma</span>
+<span class="k">sudo</span> apt install jq curl python3</pre>
+  </div></div>
+
+  <div class="step"><div class="b">3</div><div>
+    <h3>Se quiser tirar</h3>
+    <p>O desinstalador remove só a chave <code>statusLine</code> do <code>settings.json</code>; o resto das suas configurações fica intacto.</p>
+<pre><span class="k">bash</span> statusline-cmd/install.sh --uninstall</pre>
+  </div></div>
+
+  <p class="sub">Os percentuais de 5h e semana vêm do endpoint de uso da Anthropic usando <strong>as suas próprias credenciais</strong> (<code>~/.claude/.credentials.json</code>) — nenhum token vai no repositório. Detalhes, campos disponíveis e como personalizar: <a href="https://github.com/inematds/skillmanager3x/tree/main/statusline-cmd">statusline-cmd/README.md</a>.</p>
+  <p class="sub"><strong>Nomes parecidos, coisas diferentes:</strong> a skill <code>session-statusline</code> escreve um checkpoint em texto quando você pede; a pasta <code>statusline-cmd</code> instala a barra fixa do terminal.</p>
 </div></section>
 
 <section id="roadmap"><div class="wrap">
