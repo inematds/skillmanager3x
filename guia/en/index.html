@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>skillmanager3x — skills to keep your Claude Code session under control</title>
+<meta name="description" content="Session-management skill library for Claude Code: session-handoff (writes to a file), prime, session-statusline and memory-audit. Switch sessions with handoff → /clear → /prime without losing the thread.">
+<link rel="alternate" hreflang="pt-BR" href="https://inematds.github.io/skillmanager3x/guia/">
+<link rel="alternate" hreflang="en" href="https://inematds.github.io/skillmanager3x/guia/en/">
+<link rel="alternate" hreflang="es" href="https://inematds.github.io/skillmanager3x/guia/es/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0c10; --bg2:#14141b; --card:#16161e; --line:#272730;
+    --txt:#e9e9ee; --mut:#9a9aa6; --amb:#E2A23B; --amb2:#f0c070; --sky:#38bdf8; --pro:#cbd5e1;
+    color-scheme:dark;
+  }
+  body.light{
+    --bg:#f6f7f9; --bg2:#eceef2; --card:#ffffff; --line:#e1e3ea;
+    --txt:#1a1a22; --mut:#5b5b68; --amb:#b9791d; --amb2:#a16207; --sky:#0369a1; --pro:#b45309;
+    color-scheme:light;
+  }
+  body.light .hero .glow{opacity:.5}
+  body.light pre{background:#0e0e14;color:#d6d6e0}
+  body.light pre .c{color:#8a8a98}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.65 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-family:Sora,sans-serif;line-height:1.15;margin:0}
+  a{color:var(--amb);text-decoration:none}
+  code,pre{font-family:"JetBrains Mono",monospace}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 22px}
+  .mut{color:var(--mut)} .amb{color:var(--amb)}
+  .chip{display:inline-block;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amb);font-weight:600;font-family:Sora}
+  nav{position:sticky;top:0;z-index:30;backdrop-filter:blur(12px);background:rgba(12,12,16,.78);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;gap:22px;height:60px}
+  nav .brand{display:flex;align-items:center;gap:8px;font-family:Sora;font-weight:800;letter-spacing:-.02em;color:var(--amb)}
+  nav .brand .emoji{font-size:1.25rem}
+  nav .sep{color:var(--mut);opacity:.45}
+  nav .inema{color:var(--sky);font-weight:600;font-size:.88rem;font-family:Sora}
+  nav .inema:hover{filter:brightness(1.15)}
+  nav .pro{color:var(--pro);font-weight:600;font-size:.88rem;font-family:Sora}
+  nav .pro:hover{filter:brightness(1.15)}
+  nav .clubpro{display:inline-flex;align-items:center;gap:6px}
+  nav .links{margin-left:auto;display:flex;align-items:center;gap:20px;font-size:.92rem}
+  nav .links a.sec{color:var(--mut)} nav .links a.sec:hover{color:var(--txt)}
+  .tgl{background:var(--bg2);border:1px solid var(--line);color:var(--txt);width:38px;height:38px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:1.05rem}
+  .tgl:hover{border-color:var(--amb)}
+  .btn{display:inline-block;background:var(--amb);color:#1a1206;font-weight:600;padding:.6em 1.05em;border-radius:10px;font-family:Sora}
+  .btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line)}
+  @media(max-width:1700px){nav .links a.sec[href="#pre"],nav .links a.sec[href="#roadmap"]{display:none}}
+  nav .links a.sec{white-space:nowrap}
+  @media(max-width:1700px){nav .links a.sec[href="#exemplos"],nav .links a.sec[href="#statusline"]{display:none}}
+  @media(max-width:1180px){nav .links a.sec{display:none}}
+  .grid>*,.step>div{min-width:0} pre{overflow-x:auto;max-width:100%} p code,li code{overflow-wrap:anywhere}
+  @media(max-width:680px){nav .wrap{gap:8px;padding:8px 14px;height:auto;flex-wrap:wrap} nav .links{gap:8px;margin-left:0;width:100%;justify-content:space-between} nav .btn{padding:.45em .7em;font-size:.82rem}}
+  .lang{display:inline-flex;gap:2px;font-family:Sora;font-size:.78rem}
+  .lang a{color:var(--mut);padding:.2em .45em;border-radius:6px} .lang a.on{color:var(--amb);background:rgba(226,162,59,.12)}
+  .resumo{padding:38px 0 34px;border-bottom:1px solid var(--line)}
+  .resumo p{font-size:1.12rem;line-height:1.7;max-width:74ch;margin:.55em 0 0}
+  .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+  .hero .glow{position:absolute;inset:-40% -20% auto auto;width:70%;height:600px;background:radial-gradient(closest-side,rgba(226,162,59,.22),transparent 70%);pointer-events:none}
+  .hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:74px 22px}
+  .hero h1{font-size:clamp(2.2rem,5vw,3.5rem);font-weight:800;letter-spacing:-.025em}
+  .hero p.lead{font-size:1.18rem;color:var(--mut);margin:1.1em 0 1.6em;max-width:34ch}
+  .hero .cta{display:flex;gap:12px;flex-wrap:wrap}
+  .hero figure{margin:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000}
+  .hero figure img{width:100%;display:block}
+  @media(max-width:780px){.hero .wrap{grid-template-columns:1fr;padding:48px 22px}}
+  section{padding:62px 0;border-bottom:1px solid var(--line)}
+  section h2{font-size:clamp(1.5rem,3.4vw,2.1rem);font-weight:800;letter-spacing:-.02em}
+  section .sub{color:var(--mut);margin:.6em 0 2em;max-width:62ch}
+  .grid{display:grid;gap:16px}
+  .g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)} .g2{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:820px){.g3,.g4{grid-template-columns:1fr 1fr}}
+  @media(max-width:540px){.g2,.g3,.g4{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .card h3{font-size:1.05rem;margin-bottom:.4em}
+  .card p{color:var(--mut);font-size:.92rem;margin:0}
+  .num{display:inline-flex;width:30px;height:30px;align-items:center;justify-content:center;border-radius:8px;background:rgba(226,162,59,.14);color:var(--amb);font-family:Sora;font-weight:800;font-size:.9rem;margin-bottom:.7em}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+  .flow span{background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:.45em .9em;font-size:.85rem;font-family:Sora;font-weight:600}
+  .flow .arr{color:var(--amb);border:none;background:none;padding:0 .1em}
+  pre{background:#0a0a0e;border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow:auto;font-size:.86rem;line-height:1.6;color:#d6d6e0}
+  pre .c{color:#6f6f7c} pre .k{color:var(--amb2)} pre .s{color:#9ece6a}
+  .step{display:grid;grid-template-columns:46px 1fr;gap:16px;margin-bottom:26px}
+  .step .b{width:46px;height:46px;border-radius:12px;background:var(--amb);color:#1a1206;font-family:Sora;font-weight:800;font-size:1.25rem;display:flex;align-items:center;justify-content:center}
+  .step h3{font-size:1.12rem;margin-bottom:.3em}
+  .step p{color:var(--mut);margin:.2em 0 .7em}
+  .ex{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:680px){.ex{grid-template-columns:1fr}}
+  .ex figure{margin:0;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+  .ex figure img{width:100%;display:block}
+  .ex figcaption{padding:12px 14px;font-size:.88rem;color:var(--mut);background:var(--card)}
+  .phase{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
+  .phase:last-child{border:none}
+  .phase .tag{flex:0 0 92px;font-family:Sora;font-weight:800;color:var(--amb)}
+  .phase .d strong{display:block;margin-bottom:.2em}
+  .phase .d span{color:var(--mut);font-size:.92rem}
+  footer{padding:46px 0;text-align:center;color:var(--mut);font-size:.9rem}
+  .pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:.3em .8em;font-size:.78rem;color:var(--mut);margin:0 4px}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="#top"><span class="emoji">🧠</span> skillmanager3x</a>
+  <span class="sep">|</span>
+  <span class="clubpro">
+    <a class="inema" href="https://inema.club" target="_blank" rel="noopener">INEMA.CLUB</a>
+    <span class="sep">-</span>
+    <a class="pro" href="https://inema.pro" target="_blank" rel="noopener">PRO</a>
+  </span>
+  <div class="links">
+    <a class="sec" href="#oque">What it is</a>
+    <a class="sec" href="#fluxo">How it works</a>
+    <a class="sec" href="#troca">Handoff</a>
+    <a class="sec" href="#pre">Prerequisites</a>
+    <a class="sec" href="#guia">Usage guide</a>
+    <a class="sec" href="#exemplos">Examples</a>
+    <a class="sec" href="#statusline">Statusline</a>
+    <a class="sec" href="#roadmap">Roadmap</a>
+    <span class="lang"><a href="../">PT</a><a class="on" href="./">EN</a><a href="../es/">ES</a></span>
+    <button class="tgl" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">🌙</button>
+    <a class="btn" href="https://github.com/inematds/skillmanager3x" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</div></nav>
+
+<header class="hero" id="top">
+  <div class="glow"></div>
+  <div class="wrap">
+    <div>
+      <span class="chip">Skills · Claude Code</span>
+      <h1>Skills so your Claude Code session doesn't turn into a <span class="amb">mess</span>.</h1>
+      <p class="lead">A handoff that writes to a file before <code>/clear</code>, <code>/prime</code> to resume, a mid-work checkpoint and a memory audit. Each does one job, in PT and EN.</p>
+      <div class="cta">
+        <a class="btn" href="#guia">Start the guide</a>
+        <a class="btn ghost" href="#troca">handoff → /clear → /prime</a>
+        <a class="btn ghost" href="https://github.com/inematds/skillmanager3x" target="_blank" rel="noopener">View on GitHub</a>
+      </div>
+    </div>
+    <figure><img src="../assets/banner-en.jpg" alt="skillmanager3x — session skills: a handoff that writes, /clear and /prime"></figure>
+  </div>
+</header>
+
+<section id="resumo" class="resumo"><div class="wrap">
+  <span class="chip">In short</span>
+  <p>skillmanager3x is a set of skills (ready-made instructions in text files) for people who use Claude Code and work in long sessions. They solve the problem of losing the thread when the conversation fills up: <code>session-handoff</code> writes the state to a file, you clear with <code>/clear</code>, and <code>prime</code> resumes by reading that file. There is also a quick checkpoint, a memory audit and a status bar. To use them, just copy the folders into <code>~/.claude/skills</code>.</p>
+</div></section>
+
+<section id="oque"><div class="wrap">
+  <span class="chip">What it is</span>
+  <h2>A session-management library — not a framework</h2>
+  <p class="sub">There is no build, no dependencies and no executable code. Each skill is a folder with a <code>SKILL.md</code> (markdown + YAML frontmatter) that Claude Code loads when you say one of the triggers.</p>
+  <figure style="margin:0 0 26px;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000"><img src="../assets/banner-grade-en.jpg" alt="Handoff, /clear, /prime, statusline, memory-audit and status bar" loading="lazy" style="width:100%;display:block"></figure>
+  <div class="grid g4">
+    <div class="card"><h3>🤝 session-handoff</h3><p>Passes the baton before <code>/clear</code> or an agent switch. Shows it in the chat <b>and writes</b> it to <code>handoffs/history/&lt;UTC&gt;.md</code> + <code>handoffs/latest.md</code>, with the exact next action, real verification and a secrets check.</p></div>
+    <div class="card"><h3>🔎 prime</h3><p>The handoff's partner: at the start of the session it reads <code>CLAUDE.md</code>/<code>AGENTS.md</code>, <code>context/</code>, <code>tasks/</code> and <code>handoffs/latest.md</code> and returns a short briefing. Read-only; it doesn't resume a deploy or a send on its own.</p></div>
+    <div class="card"><h3>📊 session-statusline</h3><p>A quick checkpoint <em>during</em> the work: current focus, what went to memory, recent decisions, next steps and a recommendation (continue, compact, audit, handoff or clear).</p></div>
+    <div class="card"><h3>🧹 memory-audit</h3><p>An inventory of what is in <code>~/.claude/projects/&lt;project&gt;/memory/</code> and in <code>CLAUDE.md</code>. It separates durable facts (keep) from short-term state (discard) and noise (remove).</p></div>
+  </div>
+</div></section>
+
+<section id="fluxo"><div class="wrap">
+  <span class="chip">How it works</span>
+  <h2>Triggers that don't overlap</h2>
+  <p class="sub">Rule of thumb: <strong>end of session → handoff. "Where are we?" → statusline. "What's in memory?" → audit.</strong> You speak in natural language, the harness matches the frontmatter <code>description</code> and loads the right skill.</p>
+  <div class="flow">
+    <span>You say the trigger</span><span class="arr">→</span>
+    <span>Claude Code matches the description</span><span class="arr">→</span>
+    <span>Loads the SKILL.md</span><span class="arr">→</span>
+    <span>Follows the output format</span><span class="arr">→</span>
+    <span>Replies in the chat (the handoff also writes)</span>
+  </div>
+  <div class="grid g4" style="margin-top:26px">
+    <div class="card"><h3>🤝 Handoff triggers</h3><p>"handoff", "wrap up", "wrap up session", "summarize before clear", "I'm going to /clear".</p></div>
+    <div class="card"><h3>🔎 Prime triggers</h3><p>"prime", "resume", "pick up where we left off", "read the handoff", or when entering a project that has <code>handoffs/latest.md</code>.</p></div>
+    <div class="card"><h3>📊 Statusline triggers</h3><p>"statusline", "checkpoint", "where are we", "next steps".</p></div>
+    <div class="card"><h3>🧹 Audit triggers</h3><p>"audit memory", "memory audit", "what was saved", "bloated memory".</p></div>
+  </div>
+</div></section>
+
+<section id="troca"><div class="wrap">
+  <span class="chip">Spotlight · session switch</span>
+  <h2>Switch sessions without losing the thread: <span class="amb">handoff → /clear → /prime</span></h2>
+  <p class="sub">When the context fills up or the session has already compacted, don't insist on the same conversation. Write the state to a file, clear, and start over by reading that file. This is the process we recommend for any long work, in Claude Code and in Codex.</p>
+  <div class="flow">
+    <span>/session-handoff (writes)</span><span class="arr">→</span>
+    <span>/clear (resets the conversation)</span><span class="arr">→</span>
+    <span>/prime (re-reads and summarizes)</span><span class="arr">→</span>
+    <span>Continues from the next action</span>
+  </div>
+  <div class="grid g3" style="margin-top:26px">
+    <div class="card"><h3>💾 1. /session-handoff</h3><p>Writes what was done, what is in progress, the <b>exact next action</b> and what depends on the human, with no secrets. It writes a new file to <code>handoffs/history/&lt;UTC-date&gt;.md</code> (never overwrites) and updates <code>handoffs/latest.md</code>.</p></div>
+    <div class="card"><h3>🧹 2. /clear</h3><p>Starts from scratch: empty context, without the weight of compactions. Nothing is lost, because the state is in the file. In Codex, open a new session.</p></div>
+    <div class="card"><h3>🔎 3. /prime</h3><p>Before acting, it reads <code>AGENTS.md</code>/<code>CLAUDE.md</code>, <code>context/</code>, <code>tasks/current.md</code> and <code>handoffs/latest.md</code> and returns a short briefing: goal, main rule with source, last decision, next action and conflicts. Read-only: it doesn't resume publishing, deploy or sending on its own.</p></div>
+  </div>
+  <div class="card" style="margin-top:18px;border-color:var(--amb)"><h3>⚠️ There are two session-handoffs: check which one you have</h3>
+    <div class="grid g2" style="margin-top:10px">
+      <div><p><b>Old version (chat only)</b>, the one this repository shipped until Oct/2026 and that circulates in other kits: it shows the summary in the conversation and writes nothing. When you run <code>/clear</code>, the summary goes away with it unless you copy it by hand, and <code>/prime</code> finds nothing to read.</p></div>
+      <div><p><b>Current version (writes to a file)</b>, the one now in <code>skill/pt</code> and <code>skill/en</code>, identical to the one in the <a href="https://github.com/inematds/agente-claude-codex" target="_blank" rel="noopener">agente-claude-codex</a> 1.2.1 kit: it shows in the chat <b>and</b> writes to <code>handoffs/</code>; it creates the folder if the project only has <code>CLAUDE.md</code>.</p></div>
+    </div>
+    <pre><span class="c"># 0 = chat-only version; 1 or more = writes to handoffs/</span>
+<span class="k">grep</span> -c <span class="s">"handoffs/history"</span> ~/.claude/skills/session-handoff/SKILL.md
+
+<span class="c"># swap in the version that writes (and install the prime partner)</span>
+<span class="k">cp</span> -r skill/en/session-handoff skill/en/prime ~/.claude/skills/</pre>
+  </div>
+  <div class="card" style="margin-top:18px;border-color:var(--amb)"><h3>⏳ For work lasting hours: Long Execution</h3><p>This cycle is the foundation of the <a href="https://inematds.github.io/execucao-longa/guia/en/#troca" target="_blank" rel="noopener">Long Execution</a> project, the method for agents that work for hours or days (<code>/goal</code>, state files, ceilings and a done criterion). It has the hook that measures the context and writes the handoff on its own at <b>~70%</b> and <b>~85%</b> and right after a compaction, while the cache is still warm; you only run <code>/clear</code> and <code>/prime</code>. It also has the research behind the context bands and <code>recall</code> to search everything that has ever been said.</p>
+    <div class="cta" style="margin-top:12px"><a class="btn" href="https://inematds.github.io/execucao-longa/guia/en/" target="_blank" rel="noopener">Open the Long Execution guide</a><a class="btn ghost" href="https://github.com/inematds/execucao-longa" target="_blank" rel="noopener">inematds/execucao-longa</a></div></div>
+</div></section>
+
+<section id="pre"><div class="wrap">
+  <span class="chip">Prerequisites</span>
+  <h2>Basically nothing</h2>
+  <p class="sub">If you already use Claude Code, you're ready. There's no package to install, no runtime and no service to run.</p>
+  <div class="grid g3">
+    <div class="card"><h3>Claude Code</h3><p>Anthropic's CLI, with skills support (the <code>skills/</code> folder is scanned at start).</p><pre><span class="c"># check that it's installed</span>
+<span class="k">claude</span> --version</pre></div>
+    <div class="card"><h3>The repository</h3><p>Clone (or download) it — the skills are just text files.</p><pre><span class="k">git</span> clone <span class="s">https://github.com/inematds/skillmanager3x</span>
+<span class="k">cd</span> skillmanager3x</pre></div>
+    <div class="card"><h3>A skills folder</h3><p>Global (all sessions) or per project. Create it if it doesn't exist.</p><pre><span class="c"># global</span>
+<span class="k">mkdir</span> -p ~/.claude/skills</pre></div>
+  </div>
+</div></section>
+
+<section id="guia"><div class="wrap">
+  <span class="chip">Usage guide · step by step</span>
+  <h2>From clone to first handoff</h2>
+  <p class="sub">Five steps. The longest takes a minute.</p>
+
+  <div class="step"><div class="b">1</div><div>
+    <h3>Clone the repository</h3>
+    <p>The skills live in <code>skill/pt/</code> and <code>skill/en/</code> — same structure in both languages.</p>
+<pre><span class="k">git</span> clone <span class="s">https://github.com/inematds/skillmanager3x</span>
+<span class="k">cd</span> skillmanager3x</pre>
+  </div></div>
+
+  <div class="step"><div class="b">2</div><div>
+    <h3>Choose the language</h3>
+    <p>The <code>name</code> and <code>description</code> fields stay in English in both versions (for consistent harness triggering), but the <code>description</code> in <code>pt/</code> includes Portuguese triggers.</p>
+<pre><span class="k">ls</span> skill/pt   <span class="c"># session-handoff  prime  session-statusline  memory-audit</span>
+<span class="k">ls</span> skill/en   <span class="c"># same structure, texts in English</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">3</div><div>
+    <h3>Install the skills</h3>
+    <p>Copy the <strong>whole folder</strong> of each skill — with the <code>SKILL.md</code> inside. Don't flatten the structure.</p>
+<pre><span class="c"># global — applies to all sessions</span>
+<span class="k">mkdir</span> -p ~/.claude/skills
+<span class="k">cp</span> -r skill/en/session-handoff    ~/.claude/skills/
+<span class="k">cp</span> -r skill/en/prime              ~/.claude/skills/
+<span class="k">cp</span> -r skill/en/session-statusline ~/.claude/skills/
+<span class="k">cp</span> -r skill/en/memory-audit       ~/.claude/skills/
+
+<span class="c"># or per project</span>
+<span class="k">cp</span> -r skill/en/session-handoff <span class="s">&lt;project&gt;</span>/.claude/skills/</pre>
+  </div></div>
+
+  <div class="step"><div class="b">4</div><div>
+    <h3>Check that it registered</h3>
+    <p>In Claude Code, list the available skills. All four should appear.</p>
+<pre><span class="k">/skills</span>   <span class="c"># session-handoff · prime · session-statusline · memory-audit</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">5</div><div>
+    <h3>Use the trigger, not the name</h3>
+    <p>You don't need to memorize commands — speak naturally and the right skill kicks in.</p>
+<pre><span class="c"># end of session: writes handoffs/latest.md, then /clear</span>
+handoff before I /clear
+
+<span class="c"># new session: reads the handoff and summarizes</span>
+/prime
+
+<span class="c"># mid-work</span>
+statusline
+
+<span class="c"># review memory</span>
+audit this project's memory, it's messy</pre>
+  </div></div>
+</div></section>
+
+<section id="exemplos"><div class="wrap">
+  <span class="chip">Examples</span>
+  <h2>What the output really looks like</h2>
+  <p class="sub">Three formats, three purposes. Everything comes out in the chat; only the handoff also writes to <code>handoffs/</code>, which is where <code>prime</code> reads from.</p>
+  <div class="grid g2">
+    <div class="card">
+      <h3>🤝 Handoff — auth refactor</h3>
+      <p style="margin-bottom:12px">Written to <code>handoffs/history/2026-10-13T014500Z.md</code> and copied to <code>handoffs/latest.md</code>.</p>
+<pre><span class="k"># Handoff — 2026-10-13 — auth middleware refactor</span>
+
+<span class="k">## Accepted state</span>
+- [confirmed] auth/jwt_validator.py extracted from middleware.py:45-180
+
+<span class="k">## Proposed / tried, not confirmed</span>
+- [unverified] public-key cache TTL 5min — no test
+- [?] v1→v2 migration — user wanted to review it first
+
+<span class="k">## Verification</span>
+- Run: `pytest tests/auth` → 12 passed
+
+<span class="k">## Running state</span>
+- Background processes: shell_a3f → pytest --watch
+
+<span class="k">## Exact next action</span>
+Check whether the v1→v2 migration goes in now (needs the user's ok).</pre>
+    </div>
+    <div class="card">
+      <h3>📊 Statusline — checkpoint</h3>
+      <p style="margin-bottom:12px">It always ends with a <strong>Recommendation</strong>: which skill (or none) makes sense next.</p>
+<pre><span class="k"># Statusline</span>
+
+<span class="k">## State</span>
+- Current focus: adjust pagination on the /users endpoint
+- Context: moderate
+- Risk: no load test with &gt;10k records
+
+<span class="k">## What was saved to memory</span>
+- Confirmed saved: none
+- Candidates: prefers keyset over offset
+
+<span class="k">## Next steps</span>
+1. Run a test with 50k records
+2. Update the OpenAPI schema
+
+<span class="k">## Recommendation</span>
+continue</pre>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h3>🧹 Memory audit — inventory</h3>
+    <p style="margin-bottom:12px">The output is a <strong>recommendation, not an execution</strong>. If you want to apply the cuts, ask in a second step: "ok, apply that".</p>
+<pre><span class="k"># Memory Audit</span>
+
+<span class="k">## Keep (durable facts)</span>
+- user_role.md → user is a Go backend engineer, new to React
+- feedback_testing.md → integration tests on real Postgres (Q3/2025 incident)
+
+<span class="k">## Consider moving to CLAUDE.md</span>
+- project_auth_rewrite.md → motivation (compliance) — belongs in the project docs
+
+<span class="k">## Remove (short-term / noise)</span>
+- session_2026-04-15.md → old session state
+- bug_fix_recipe_xyz.md → fix already applied, the code speaks for itself
+
+<span class="k">## Points of attention</span>
+- Duplication: feedback_pr_size.md and feedback_review_style.md
+- Stale: reference_grafana.md points to a dashboard whose URL changed</pre>
+  </div>
+</div></section>
+
+<section id="statusline"><div class="wrap">
+  <span class="chip">Bonus · statusline-cmd</span>
+  <h2>The bar that tells you where you are — and how much is left</h2>
+  <p class="sub">Besides the three skills, the repo ships a <strong>statusline</strong> for Claude Code: the fixed line below the input, with directory, model, effort, remaining context and how much of your limit is already gone. One command to install.</p>
+
+<pre><span class="c"># what shows up in the terminal</span>
+nei@maquina:~/projetos/wifi <span class="s">Opus 5/low</span> ctx 10% 5h:24%→00:10 w:29%→10/08 21:00 d:109.6M</pre>
+
+  <div class="grid g3">
+    <div class="card"><h3>🧭 Where and with what</h3><p><code>user@host:cwd</code> plus <code>Opus 5/low</code> — the session's model and effort level, following what you chose in <code>/model</code>.</p></div>
+    <div class="card"><h3>🪟 How much context</h3><p><code>ctx 10%</code> — how much of the window has been used. It's the number that tells you whether you can keep going or it's time for a handoff.</p></div>
+    <div class="card"><h3>⏳ How much limit</h3><p><code>5h:24%→00:10</code> and <code>w:29%→10/08 21:00</code> — usage and reset time of the 5-hour and weekly windows. <code>d:109.6M</code> is the day's tokens.</p></div>
+  </div>
+
+  <div class="step" style="margin-top:34px"><div class="b">1</div><div>
+    <h3>Install with one command</h3>
+    <p>The script copies the statusline to <code>~/.claude/</code> and registers the <code>statusLine</code> block in your <code>settings.json</code> — preserving the rest of the file, with a <code>.bak</code> backup.</p>
+<pre><span class="k">git</span> clone <span class="s">https://github.com/inematds/skillmanager3x</span>
+<span class="k">bash</span> skillmanager3x/statusline-cmd/install.sh</pre>
+  </div></div>
+
+  <div class="step"><div class="b">2</div><div>
+    <h3>Check the preview</h3>
+    <p>The installer prints the line already assembled with your data. It shows up on Claude Code's next render — no session needs to be restarted.</p>
+<pre><span class="c"># dependencies, if any is missing</span>
+<span class="k">sudo</span> apt install jq curl python3</pre>
+  </div></div>
+
+  <div class="step"><div class="b">3</div><div>
+    <h3>If you want to remove it</h3>
+    <p>The uninstaller removes only the <code>statusLine</code> key from <code>settings.json</code>; the rest of your settings stays intact.</p>
+<pre><span class="k">bash</span> statusline-cmd/install.sh --uninstall</pre>
+  </div></div>
+
+  <p class="sub">The 5h and weekly percentages come from Anthropic's usage endpoint using <strong>your own credentials</strong> (<code>~/.claude/.credentials.json</code>) — no token goes in the repository. Details, available fields and how to customize: <a href="https://github.com/inematds/skillmanager3x/tree/main/statusline-cmd">statusline-cmd/README.md</a> (in Portuguese).</p>
+  <p class="sub"><strong>Similar names, different things:</strong> the <code>session-statusline</code> skill writes a text checkpoint when you ask; the <code>statusline-cmd</code> folder installs the fixed terminal bar.</p>
+</div></section>
+
+<section id="roadmap"><div class="wrap">
+  <span class="chip">Roadmap</span>
+  <h2>Where it stands and where it's going</h2>
+  <p class="sub">The project is small on purpose: disjoint skills, no trigger overlap.</p>
+  <div class="phase"><div class="tag">Done</div><div class="d"><strong>The three skills, in PT and EN</strong><span>session-handoff, session-statusline and memory-audit, with a complete <code>SKILL.md</code> in both languages and detailed READMEs in <code>skill/en/</code> and <code>skill/pt/</code> covering design decisions.</span></div></div>
+  <div class="phase"><div class="tag">Done</div><div class="d"><strong>Triggers without overlap</strong><span>Each skill has one job. The statusline ends with a recommendation that points to the next one — routing is explicit, not guessed.</span></div></div>
+  <div class="phase"><div class="tag">Convention</div><div class="d"><strong>Keep en/pt in sync when editing</strong><span>The two versions have the same structure. When you touch a skill, update both — it's the repo's maintenance rule.</span></div></div>
+  <div class="phase"><div class="tag">Done · Oct/2026</div><div class="d"><strong>A handoff that writes + prime</strong><span><code>session-handoff</code> now writes to <code>handoffs/history/</code> + <code>handoffs/latest.md</code> (same version as the agente-claude-codex 1.2.1 kit) and <code>prime</code> joined, which reads that file in the new session. Full cycle: handoff → <code>/clear</code> → <code>/prime</code>.</span></div></div>
+  <div class="phase"><div class="tag">Related</div><div class="d"><strong>Long Execution</strong><span>A hook that writes the handoff on its own by context band, state files and <code>/goal</code> for work lasting hours: <a href="https://inematds.github.io/execucao-longa/guia/en/" target="_blank" rel="noopener">Long Execution guide</a>.</span></div></div>
+</div></section>
+
+<footer>
+  <div class="wrap">
+    <div class="pill">Claude Code</div><div class="pill">Markdown + YAML frontmatter</div><div class="pill">Zero dependencies</div><div class="pill">PT / EN / ES</div>
+    <p style="margin-top:18px">skillmanager3x · session-management skills ·
+      <a href="https://github.com/inematds/skillmanager3x">inematds/skillmanager3x</a> ·
+      <a href="https://inema.club">INEMA.CLUB</a></p>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    var KEY='skillmanager3x-theme';
+    var b=document.body, t=document.getElementById('themeToggle');
+    if(localStorage.getItem(KEY)==='light'){ b.classList.add('light'); t.textContent='☀️'; }
+    t.addEventListener('click',function(){
+      var light=b.classList.toggle('light');
+      t.textContent=light?'☀️':'🌙';
+      localStorage.setItem(KEY, light?'light':'dark');
+    });
+  })();
+</script>
+</body>
+</html>

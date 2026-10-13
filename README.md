@@ -1,10 +1,30 @@
 # skillmanager3x
 
-Biblioteca de **skills de gestão de sessão** para o [Claude Code](https://claude.ai/code). Três templates pequenos e disjuntos que ajudam a manter contexto, memória e transições entre sessões sob controle.
+[![skillmanager3x — skills de sessão](guia/assets/banner.jpg)](https://inematds.github.io/skillmanager3x/guia/)
+
+**🇧🇷 [Português](README.md) · 🇺🇸 [English](README.en.md) · 🇪🇸 [Español](README.es.md)**
+
+## O que é
+
+O skillmanager3x é um conjunto de skills (instruções prontas em arquivos de texto) para quem usa o Claude Code e trabalha em sessões longas. Elas resolvem o problema de perder o fio quando a conversa enche: o `session-handoff` grava o estado num arquivo, você limpa com `/clear` e o `prime` retoma lendo esse arquivo. Há ainda um checkpoint rápido, uma auditoria da memória e uma barra de status. Para usar, basta copiar as pastas para `~/.claude/skills`.
+
+Biblioteca de **skills de gestão de sessão** para o [Claude Code](https://claude.ai/code). Templates pequenos e disjuntos que ajudam a manter contexto, memória e transições entre sessões sob controle.
 
 ## 📖 Guia de uso
 
 Guia completo (landing + passo a passo): **https://inematds.github.io/skillmanager3x/guia/**
+
+## ⭐ Troca de sessão: handoff → `/clear` → `/prime`
+
+Quando o contexto enche ou a sessão já compactou, não insista na mesma conversa:
+
+1. **`/session-handoff`** grava o que foi feito, o que está em andamento, a próxima ação exata e o que depende de você em `handoffs/history/<UTC>.md` (nunca sobrescreve) e atualiza `handoffs/latest.md`.
+2. **`/clear`** zera a conversa (no Codex, abra uma sessão nova). Nada se perde: o estado está no arquivo.
+3. **`/prime`** lê `CLAUDE.md`/`AGENTS.md`, `context/`, `tasks/current.md` e `handoffs/latest.md` e devolve um briefing curto. Só lê; não retoma deploy, publicação ou envio sozinho.
+
+> **Existem duas `session-handoff`.** A versão antiga deste repositório (e a que circula em outros kits) só mostrava o resumo no chat: ao dar `/clear` ele sumia e o `/prime` não tinha o que ler. A versão atual, em `skill/pt` e `skill/en`, é a mesma do kit [agente-claude-codex](https://github.com/inematds/agente-claude-codex) 1.2.1 e **grava em arquivo**. Para conferir a sua: `grep -c "handoffs/history" ~/.claude/skills/session-handoff/SKILL.md` (0 = versão só chat).
+
+Para trabalho de horas ou dias, veja o **[Execução Longa](https://inematds.github.io/execucao-longa/guia/)** ([repo](https://github.com/inematds/execucao-longa)): o hook que grava o handoff sozinho em ~70% e ~85% do contexto e depois de compactar, os arquivos de estado, o `/goal` e a pesquisa por trás das faixas de contexto.
 
 Não há build, dependências nem código executável: cada skill é uma pasta com um `SKILL.md` (markdown + frontmatter YAML) que o Claude Code carrega quando o usuário fala um dos gatilhos.
 
@@ -14,10 +34,12 @@ Não há build, dependências nem código executável: cada skill é uma pasta c
 skill/
 ├── en/                  versões em inglês  (+ README detalhado)
 │   ├── session-handoff/SKILL.md
+│   ├── prime/SKILL.md
 │   ├── session-statusline/SKILL.md
 │   └── memory-audit/SKILL.md
 └── pt/                  versões em português (+ README detalhado)
     ├── session-handoff/SKILL.md
+    ├── prime/SKILL.md
     ├── session-statusline/SKILL.md
     └── memory-audit/SKILL.md
 
@@ -29,23 +51,24 @@ statusline-cmd/          barra de status do terminal (bash, opcional)
 
 Os READMEs em `skill/en/` e `skill/pt/` cobrem decisões de design, mudanças vs. versões anteriores e dicas avançadas. Este README do raiz é a porta de entrada.
 
-## As três skills
+## As skills
 
 Cada uma tem **um trabalho só** e gatilhos que não se sobrepõem. Use a tabela abaixo pra escolher:
 
 | Skill | Quando usar | Gatilhos típicos |
 |---|---|---|
 | `session-handoff` | fim de sessão, antes de `/clear` ou troca de agente | "handoff", "vou dar /clear", "encerrar sessão", "passar para outro agente", "wrap up", "resumo final antes de limpar" |
+| `prime` | início da sessão nova, depois do `/clear` | "prime", "retoma", "continua de onde parou", "lê o handoff" |
 | `session-statusline` | checkpoint rápido **durante** o trabalho | "statusline", "checkpoint", "onde estamos", "como está a sessão", "próximos passos", "organiza/otimiza a sessão" |
 | `memory-audit` | revisar o que está/deveria estar em memória | "analise a memória", "analise CLAUDE.md", "o que foi guardado", "memória inchada", "limpa memória" |
 
-Regra de bolso: **fim de sessão → handoff. "Como estamos?" → statusline. "O que tem na memória?" → audit.**
+Regra de bolso: **fim de sessão → handoff. Sessão nova → prime. "Como estamos?" → statusline. "O que tem na memória?" → audit.**
 
 ---
 
 ### 1. `session-handoff` — passar o bastão antes de limpar contexto
 
-Produz um resumo estruturado da sessão para um agente futuro pegar de onde você parou. Pensado para ser lido **só por outra instância do Claude**, não por humano — terso, com paths absolutos, IDs de processos em background, e marcadores de confiança (`[confirmed]`, `[unverified]`, `[?]`).
+Produz um resumo estruturado da sessão para um agente futuro pegar de onde você parou — terso, com caminhos, IDs de processos em background, verificação real e marcadores de confiança (`[confirmed]`, `[unverified]`, `[?]`). Mostra no chat **e grava** em `handoffs/history/<UTC>.md` + `handoffs/latest.md` quando a raiz do projeto tem `handoffs/`, `AGENTS.md` ou `CLAUDE.md`.
 
 **Quando invocar:**
 - Antes de `/clear`.
@@ -58,40 +81,39 @@ Produz um resumo estruturado da sessão para um agente futuro pegar de onde voc�
 Usuário: vou dar /clear, faz handoff antes
 ```
 
-O Claude responde com algo no formato:
+O Claude mostra no chat e grava em `handoffs/history/2026-10-13T014500Z.md` (e copia para `handoffs/latest.md`), no formato:
 
 ```
-# Session Handoff — refatoração do middleware de auth
+# Handoff — 2026-10-13 — refatoração do middleware de auth
 
-## Where it started
-Usuário pediu pra extrair lógica de validação de JWT do middleware monolítico.
-Decidimos manter compatibilidade com tokens v1 enquanto v2 não vira default.
+## Projeto e escopo
+~/projetos/api. Extrair a validação de JWT do middleware monolítico, mantendo tokens v1.
 
-## Applied / shipped
-- [confirmed] /auth/jwt_validator.py extraído de middleware.py:45-180
-- [confirmed] testes em /tests/auth/test_jwt_validator.py — 12/12 passando
+## Estado aceito
+- [confirmed] auth/jwt_validator.py extraído de middleware.py:45-180
 
-## Proposed / attempted but not confirmed
+## Proposto / tentado, não confirmado
 - [unverified] cache de chaves públicas com TTL de 5min — código pronto, sem teste
 - [?] migração v1→v2 — usuário queria revisar antes de mergear
 
-## Key files for next session
-- /auth/jwt_validator.py — núcleo da extração
-- Plan file: ~/.claude/plans/auth-refactor.md
+## Verificação
+- Rodado: `pytest tests/auth/ -v` → 12 passed
+- Não rodado: teste de carga — sem ambiente
 
-## Running state
-- Background processes: shell_a3f → pytest --watch (kill: KillShell shell_a3f)
-- Dev servers: none
+## Estado em execução
+- Processos em segundo plano: shell_a3f → pytest --watch (kill: KillShell shell_a3f)
 
-## Verification
-- pytest tests/auth/ -v → todos verdes
-- curl localhost:8000/health → 200
+## Próxima ação exata
+Revisar com o usuário se a migração v1→v2 entra agora (precisa do ok dele).
 
-## Pick up here
-Revisar com usuário se a migração v1→v2 entra agora ou fica pra próxima.
+## Mapa de retomada
+- `auth/jwt_validator.py` — núcleo da extração
+
+## Checagem de compartilhamento
+- Sem segredos, tokens ou dados pessoais: sim
 ```
 
-**Saída é só chat** — o handoff nunca grava arquivo. Se quiser persistir, copie o texto manualmente.
+**Na sessão nova**, depois do `/clear`, rode `/prime`: ele lê `handoffs/latest.md` (e `CLAUDE.md`/`AGENTS.md`, `context/`, `tasks/current.md`) e devolve objetivo, regra principal com fonte, última decisão, próxima ação e conflitos.
 
 ---
 
@@ -190,11 +212,12 @@ Para o Claude Code reconhecer as skills, copie a pasta de cada skill para uma da
 - **Global (todas as sessões):** `~/.claude/skills/<skill>/`
 - **Por projeto:** `<projeto>/.claude/skills/<skill>/`
 
-Exemplo (instalação global das três skills em português):
+Exemplo (instalação global das skills em português):
 
 ```bash
 mkdir -p ~/.claude/skills
 cp -r skill/pt/session-handoff   ~/.claude/skills/
+cp -r skill/pt/prime             ~/.claude/skills/
 cp -r skill/pt/session-statusline ~/.claude/skills/
 cp -r skill/pt/memory-audit       ~/.claude/skills/
 ```
@@ -237,6 +260,6 @@ Requisitos: `jq`, `curl`, `python3` e o `date` do GNU. Os limites 5h/semanal vê
 
 ## Convenção en/pt
 
-`skill/en/` e `skill/pt/` têm a mesma estrutura. Os campos `name` e `description` do frontmatter ficam em inglês nas duas (pra triggering consistente do harness), mas a `description` **inclui gatilhos em português** quando aplicável (`"vou dar /clear"`, `"encerrar sessão"`, etc.).
+`skill/en/` e `skill/pt/` têm a mesma estrutura. O `name` é igual nas duas; a `description` **inclui gatilhos em português** quando aplicável (`"vou dar /clear"`, `"encerrar sessão"`, `"retoma"`, etc.). `session-handoff` e `prime` em `skill/pt/` são cópia exata das versões do kit [agente-claude-codex](https://github.com/inematds/agente-claude-codex) 1.2.1; as de `skill/en/` são a tradução fiel.
 
 Ao editar uma skill, sincronize as duas versões.

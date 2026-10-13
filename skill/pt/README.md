@@ -80,7 +80,7 @@ Isso evita que o próximo agente trate proposta como fato.
 1. **Diga claramente** quando estiver encerrando: "vou dar /clear" ou "faz handoff" — evita disparo errado.
 2. **Mencione o plano** se houver um: "fizemos handoff do plano X" — a skill prioriza listar o plano primeiro em "Key files".
 3. **Confira shell IDs** no output: se você rodou processos em background, eles têm que aparecer em "Running state" com kill command — sem isso o próximo agente não consegue gerenciá-los.
-4. **Output é só chat** — copie o texto para um arquivo se quiser persistir, a skill nunca grava por design.
+4. **Grava em arquivo** (desde out/2026) — além do chat, salva em `handoffs/history/<UTC>.md` + `handoffs/latest.md`. Na sessão nova, depois do `/clear`, rode `/prime` para retomar. A versão antiga era só chat.
 
 ### Para statusline funcionar bem
 1. Use **durante** o trabalho, não no fim. Se você já decidiu encerrar, use handoff direto.
@@ -99,6 +99,6 @@ Para o harness do Claude Code reconhecer as skills, elas precisam estar em uma d
 - **Global (todas as sessões):** `C:\Users\neima\.claude\skills\`
 - **Por projeto:** `<projeto>\.claude\skills\`
 
-Copie as três pastas (`session-handoff`, `session-statusline`, `memory-audit`) para o destino escolhido. Cada pasta com seu `SKILL.md` dentro — não achatar.
+Copie as quatro pastas (`session-handoff`, `prime`, `session-statusline`, `memory-audit`) para o destino escolhido. Cada pasta com seu `SKILL.md` dentro — não achatar.
 
 Para verificar se foram registradas, use `/skills` no Claude Code (ou veja o registro no início da conversa).

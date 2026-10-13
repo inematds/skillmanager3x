@@ -3,8 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>skillmanager3x — 3 skills pra manter sua sessão do Claude Code sob controle</title>
-<meta name="description" content="Biblioteca de skills de gestão de sessão para o Claude Code: session-handoff, session-statusline e memory-audit. Sem build, sem dependências — só markdown com frontmatter.">
+<title>skillmanager3x — skills pra manter sua sessão do Claude Code sob controle</title>
+<meta name="description" content="Biblioteca de skills de gestão de sessão para o Claude Code: session-handoff (grava em arquivo), prime, session-statusline e memory-audit. Troque de sessão com handoff → /clear → /prime sem perder o fio.">
+<link rel="alternate" hreflang="pt-BR" href="https://inematds.github.io/skillmanager3x/guia/">
+<link rel="alternate" hreflang="en" href="https://inematds.github.io/skillmanager3x/guia/en/">
+<link rel="alternate" hreflang="es" href="https://inematds.github.io/skillmanager3x/guia/es/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -47,7 +50,16 @@
   .tgl:hover{border-color:var(--amb)}
   .btn{display:inline-block;background:var(--amb);color:#1a1206;font-weight:600;padding:.6em 1.05em;border-radius:10px;font-family:Sora}
   .btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line)}
-  @media(max-width:760px){nav .links a.sec{display:none}}
+  @media(max-width:1700px){nav .links a.sec[href="#pre"],nav .links a.sec[href="#roadmap"]{display:none}}
+  nav .links a.sec{white-space:nowrap}
+  @media(max-width:1700px){nav .links a.sec[href="#exemplos"],nav .links a.sec[href="#statusline"]{display:none}}
+  @media(max-width:1180px){nav .links a.sec{display:none}}
+  .grid>*,.step>div{min-width:0} pre{overflow-x:auto;max-width:100%} p code,li code{overflow-wrap:anywhere}
+  @media(max-width:680px){nav .wrap{gap:8px;padding:8px 14px;height:auto;flex-wrap:wrap} nav .links{gap:8px;margin-left:0;width:100%;justify-content:space-between} nav .btn{padding:.45em .7em;font-size:.82rem}}
+  .lang{display:inline-flex;gap:2px;font-family:Sora;font-size:.78rem}
+  .lang a{color:var(--mut);padding:.2em .45em;border-radius:6px} .lang a.on{color:var(--amb);background:rgba(226,162,59,.12)}
+  .resumo{padding:38px 0 34px;border-bottom:1px solid var(--line)}
+  .resumo p{font-size:1.12rem;line-height:1.7;max-width:74ch;margin:.55em 0 0}
   .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
   .hero .glow{position:absolute;inset:-40% -20% auto auto;width:70%;height:600px;background:radial-gradient(closest-side,rgba(226,162,59,.22),transparent 70%);pointer-events:none}
   .hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:74px 22px}
@@ -104,11 +116,13 @@
   <div class="links">
     <a class="sec" href="#oque">O que é</a>
     <a class="sec" href="#fluxo">Como funciona</a>
+    <a class="sec" href="#troca">Handoff</a>
     <a class="sec" href="#pre">Pré-requisitos</a>
     <a class="sec" href="#guia">Guia de uso</a>
     <a class="sec" href="#exemplos">Exemplos</a>
     <a class="sec" href="#statusline">Statusline</a>
     <a class="sec" href="#roadmap">Roadmap</a>
+    <span class="lang"><a class="on" href="./">PT</a><a href="en/">EN</a><a href="es/">ES</a></span>
     <button class="tgl" id="themeToggle" aria-label="Alternar tema" title="Alternar tema">🌙</button>
     <a class="btn" href="https://github.com/inematds/skillmanager3x" target="_blank" rel="noopener">GitHub</a>
   </div>
@@ -119,23 +133,31 @@
   <div class="wrap">
     <div>
       <span class="chip">Skills · Claude Code</span>
-      <h1>Três skills pra sua sessão do Claude Code não virar <span class="amb">bagunça</span>.</h1>
-      <p class="lead">Handoff antes do <code>/clear</code>, checkpoint no meio do trabalho e auditoria da memória. Cada uma com um trabalho só, em PT e EN.</p>
+      <h1>Skills pra sua sessão do Claude Code não virar <span class="amb">bagunça</span>.</h1>
+      <p class="lead">Handoff que grava em arquivo antes do <code>/clear</code>, <code>/prime</code> pra retomar, checkpoint no meio do trabalho e auditoria da memória. Cada uma com um trabalho só, em PT e EN.</p>
       <div class="cta">
         <a class="btn" href="#guia">Começar o guia</a>
+        <a class="btn ghost" href="#troca">handoff → /clear → /prime</a>
         <a class="btn ghost" href="https://github.com/inematds/skillmanager3x" target="_blank" rel="noopener">Ver no GitHub</a>
       </div>
     </div>
-    <figure><img src="assets/hero.png" alt="skillmanager3x — biblioteca de skills de gestão de sessão"></figure>
+    <figure><img src="assets/banner.jpg" alt="skillmanager3x — skills de sessão: handoff que grava, /clear e /prime"></figure>
   </div>
 </header>
+
+<section id="resumo" class="resumo"><div class="wrap">
+  <span class="chip">Em resumo</span>
+  <p>O skillmanager3x é um conjunto de skills (instruções prontas em arquivos de texto) para quem usa o Claude Code e trabalha em sessões longas. Elas resolvem o problema de perder o fio quando a conversa enche: o <code>session-handoff</code> grava o estado num arquivo, você limpa com <code>/clear</code> e o <code>prime</code> retoma lendo esse arquivo. Há ainda um checkpoint rápido, uma auditoria da memória e uma barra de status. Para usar, basta copiar as pastas para <code>~/.claude/skills</code>.</p>
+</div></section>
 
 <section id="oque"><div class="wrap">
   <span class="chip">O que é</span>
   <h2>Uma biblioteca de gestão de sessão — não um framework</h2>
   <p class="sub">Não há build, dependências nem código executável. Cada skill é uma pasta com um <code>SKILL.md</code> (markdown + frontmatter YAML) que o Claude Code carrega quando você fala um dos gatilhos.</p>
-  <div class="grid g3">
-    <div class="card"><h3>🤝 session-handoff</h3><p>Passa o bastão antes do <code>/clear</code> ou da troca de agente. Resumo terso, escrito pra outra instância do Claude ler — paths absolutos, processos em background e marcadores <code>[confirmed]</code> / <code>[unverified]</code> / <code>[?]</code>.</p></div>
+  <figure style="margin:0 0 26px;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000"><img src="assets/banner-grade.jpg" alt="Handoff, /clear, /prime, statusline, memory-audit e barra de status" loading="lazy" style="width:100%;display:block"></figure>
+  <div class="grid g4">
+    <div class="card"><h3>🤝 session-handoff</h3><p>Passa o bastão antes do <code>/clear</code> ou da troca de agente. Mostra no chat <b>e grava</b> em <code>handoffs/history/&lt;UTC&gt;.md</code> + <code>handoffs/latest.md</code>, com próxima ação exata, verificação real e checagem de segredos.</p></div>
+    <div class="card"><h3>🔎 prime</h3><p>O par do handoff: no início da sessão lê <code>CLAUDE.md</code>/<code>AGENTS.md</code>, <code>context/</code>, <code>tasks/</code> e <code>handoffs/latest.md</code> e devolve um briefing curto. Só lê; não retoma deploy nem envio sozinho.</p></div>
     <div class="card"><h3>📊 session-statusline</h3><p>Checkpoint rápido <em>durante</em> o trabalho: foco atual, o que foi pra memória, decisões recentes, próximos passos e uma recomendação (continuar, compactar, auditar, handoff ou limpar).</p></div>
     <div class="card"><h3>🧹 memory-audit</h3><p>Inventário do que está em <code>~/.claude/projects/&lt;projeto&gt;/memory/</code> e no <code>CLAUDE.md</code>. Separa fato durável (mantém) de estado de curto prazo (descarta) e ruído (remove).</p></div>
   </div>
@@ -150,13 +172,44 @@
     <span>Claude Code casa a description</span><span class="arr">→</span>
     <span>Carrega o SKILL.md</span><span class="arr">→</span>
     <span>Segue o formato de saída</span><span class="arr">→</span>
-    <span>Responde no chat</span>
+    <span>Responde no chat (o handoff também grava)</span>
   </div>
-  <div class="grid g3" style="margin-top:26px">
+  <div class="grid g4" style="margin-top:26px">
     <div class="card"><h3>🤝 Gatilhos do handoff</h3><p>"handoff", "vou dar /clear", "encerrar sessão", "passar para outro agente", "wrap up", "resumo final antes de limpar".</p></div>
+    <div class="card"><h3>🔎 Gatilhos do prime</h3><p>"prime", "retoma", "continua de onde parou", "lê o handoff", ou ao entrar num projeto com <code>handoffs/latest.md</code>.</p></div>
     <div class="card"><h3>📊 Gatilhos da statusline</h3><p>"statusline", "checkpoint", "onde estamos", "como está a sessão", "próximos passos", "organiza/otimiza a sessão".</p></div>
     <div class="card"><h3>🧹 Gatilhos do audit</h3><p>"analise a memória", "analise CLAUDE.md", "o que foi guardado", "memória inchada", "limpa memória".</p></div>
   </div>
+</div></section>
+
+<section id="troca"><div class="wrap">
+  <span class="chip">Em destaque · troca de sessão</span>
+  <h2>Trocar de sessão sem perder o fio: <span class="amb">handoff → /clear → /prime</span></h2>
+  <p class="sub">Quando o contexto enche ou a sessão já compactou, não insista na mesma conversa. Grave o estado num arquivo, limpe e recomece lendo esse arquivo. É o processo que recomendamos para qualquer trabalho longo, no Claude Code e no Codex.</p>
+  <div class="flow">
+    <span>/session-handoff (grava)</span><span class="arr">→</span>
+    <span>/clear (zera a conversa)</span><span class="arr">→</span>
+    <span>/prime (relê e resume)</span><span class="arr">→</span>
+    <span>Continua da próxima ação</span>
+  </div>
+  <div class="grid g3" style="margin-top:26px">
+    <div class="card"><h3>💾 1. /session-handoff</h3><p>Escreve o que foi feito, o que está em andamento, a <b>próxima ação exata</b> e o que depende do humano, sem segredos. Grava um arquivo novo em <code>handoffs/history/&lt;data-UTC&gt;.md</code> (nunca sobrescreve) e atualiza <code>handoffs/latest.md</code>.</p></div>
+    <div class="card"><h3>🧹 2. /clear</h3><p>Começa do zero: contexto vazio, sem o peso das compactações. Nada se perde, porque o estado está no arquivo. No Codex, abra uma sessão nova.</p></div>
+    <div class="card"><h3>🔎 3. /prime</h3><p>Antes de agir, lê <code>AGENTS.md</code>/<code>CLAUDE.md</code>, <code>context/</code>, <code>tasks/current.md</code> e <code>handoffs/latest.md</code> e devolve um briefing curto: objetivo, regra principal com fonte, última decisão, próxima ação e conflitos. Só lê: não retoma publicação, deploy ou envio por conta própria.</p></div>
+  </div>
+  <div class="card" style="margin-top:18px;border-color:var(--amb)"><h3>⚠️ Existem duas session-handoff: confira qual você tem</h3>
+    <div class="grid g2" style="margin-top:10px">
+      <div><p><b>Versão antiga (só chat)</b>, a que este repositório trazia até out/2026 e que circula em outros kits: mostra o resumo na conversa e não grava nada. Ao dar <code>/clear</code>, o resumo vai embora junto, a menos que você copie à mão, e o <code>/prime</code> não encontra o que ler.</p></div>
+      <div><p><b>Versão atual (grava em arquivo)</b>, a que está agora em <code>skill/pt</code> e <code>skill/en</code>, igual à do kit <a href="https://github.com/inematds/agente-claude-codex" target="_blank" rel="noopener">agente-claude-codex</a> 1.2.1: mostra no chat <b>e</b> grava em <code>handoffs/</code>; cria a pasta se o projeto só tiver <code>CLAUDE.md</code>.</p></div>
+    </div>
+    <pre><span class="c"># 0 = versão só chat; 1 ou mais = grava em handoffs/</span>
+<span class="k">grep</span> -c <span class="s">"handoffs/history"</span> ~/.claude/skills/session-handoff/SKILL.md
+
+<span class="c"># trocar pela versão que grava (e instalar o par prime)</span>
+<span class="k">cp</span> -r skill/pt/session-handoff skill/pt/prime ~/.claude/skills/</pre>
+  </div>
+  <div class="card" style="margin-top:18px;border-color:var(--amb)"><h3>⏳ Para trabalho de horas: Execução Longa</h3><p>Este ciclo é a base do projeto <a href="https://inematds.github.io/execucao-longa/guia/#troca" target="_blank" rel="noopener">Execução Longa</a>, o método para agentes que trabalham horas ou dias (<code>/goal</code>, arquivos de estado, tetos e critério de pronto). Lá está o hook que mede o contexto e grava o handoff sozinho em <b>~70%</b> e <b>~85%</b> e logo depois de uma compactação, enquanto o cache ainda está quente; você só dá <code>/clear</code> e <code>/prime</code>. Também estão a pesquisa por trás das faixas de contexto e o <code>recall</code> para buscar em tudo o que já foi dito.</p>
+    <div class="cta" style="margin-top:12px"><a class="btn" href="https://inematds.github.io/execucao-longa/guia/" target="_blank" rel="noopener">Abrir o guia Execução Longa</a><a class="btn ghost" href="https://github.com/inematds/execucao-longa" target="_blank" rel="noopener">inematds/execucao-longa</a></div></div>
 </div></section>
 
 <section id="pre"><div class="wrap">
@@ -188,7 +241,7 @@
   <div class="step"><div class="b">2</div><div>
     <h3>Escolha o idioma</h3>
     <p>Os campos <code>name</code> e <code>description</code> ficam em inglês nas duas versões (pra triggering consistente do harness), mas a <code>description</code> de <code>pt/</code> inclui gatilhos em português.</p>
-<pre><span class="k">ls</span> skill/pt   <span class="c"># session-handoff  session-statusline  memory-audit</span>
+<pre><span class="k">ls</span> skill/pt   <span class="c"># session-handoff  prime  session-statusline  memory-audit</span>
 <span class="k">ls</span> skill/en   <span class="c"># mesma estrutura, textos em inglês</span></pre>
   </div></div>
 
@@ -198,6 +251,7 @@
 <pre><span class="c"># global — vale em todas as sessões</span>
 <span class="k">mkdir</span> -p ~/.claude/skills
 <span class="k">cp</span> -r skill/pt/session-handoff    ~/.claude/skills/
+<span class="k">cp</span> -r skill/pt/prime              ~/.claude/skills/
 <span class="k">cp</span> -r skill/pt/session-statusline ~/.claude/skills/
 <span class="k">cp</span> -r skill/pt/memory-audit       ~/.claude/skills/
 
@@ -207,15 +261,18 @@
 
   <div class="step"><div class="b">4</div><div>
     <h3>Verifique que registrou</h3>
-    <p>No Claude Code, liste as skills disponíveis. As três devem aparecer.</p>
-<pre><span class="k">/skills</span>   <span class="c"># session-handoff · session-statusline · memory-audit</span></pre>
+    <p>No Claude Code, liste as skills disponíveis. As quatro devem aparecer.</p>
+<pre><span class="k">/skills</span>   <span class="c"># session-handoff · prime · session-statusline · memory-audit</span></pre>
   </div></div>
 
   <div class="step"><div class="b">5</div><div>
     <h3>Use pelo gatilho, não pelo nome</h3>
     <p>Você não precisa decorar comandos — fale naturalmente e a skill certa entra.</p>
-<pre><span class="c"># fim de sessão</span>
+<pre><span class="c"># fim de sessão: grava handoffs/latest.md, depois /clear</span>
 vou dar /clear, faz handoff antes
+
+<span class="c"># sessão nova: lê o handoff e resume</span>
+/prime
 
 <span class="c"># no meio do trabalho</span>
 statusline
@@ -228,26 +285,28 @@ analise a memória do projeto, tá bagunçada</pre>
 <section id="exemplos"><div class="wrap">
   <span class="chip">Exemplos</span>
   <h2>Como é a saída de verdade</h2>
-  <p class="sub">Três formatos, três propósitos. Tudo sai no chat — nenhuma das skills grava arquivo por conta própria.</p>
+  <p class="sub">Três formatos, três propósitos. Tudo sai no chat; só o handoff também grava em <code>handoffs/</code>, que é de onde o <code>prime</code> lê.</p>
   <div class="grid g2">
     <div class="card">
       <h3>🤝 Handoff — refatoração de auth</h3>
-      <p style="margin-bottom:12px">Terso, com marcadores de confiança e estado de execução.</p>
-<pre><span class="k"># Session Handoff — refatoração do middleware de auth</span>
+      <p style="margin-bottom:12px">Gravado em <code>handoffs/history/2026-10-13T014500Z.md</code> e copiado para <code>handoffs/latest.md</code>.</p>
+<pre><span class="k"># Handoff — 2026-10-13 — refatoração do middleware de auth</span>
 
-<span class="k">## Applied / shipped</span>
-- [confirmed] /auth/jwt_validator.py extraído de middleware.py:45-180
-- [confirmed] testes em /tests/auth/ — 12/12 passando
+<span class="k">## Estado aceito</span>
+- [confirmed] auth/jwt_validator.py extraído de middleware.py:45-180
 
-<span class="k">## Proposed / attempted but not confirmed</span>
+<span class="k">## Proposto / tentado, não confirmado</span>
 - [unverified] cache de chaves públicas TTL 5min — sem teste
 - [?] migração v1→v2 — usuário queria revisar antes
 
-<span class="k">## Running state</span>
-- Background: shell_a3f → pytest --watch
+<span class="k">## Verificação</span>
+- Rodado: `pytest tests/auth` → 12 passed
 
-<span class="k">## Pick up here</span>
-Revisar se a migração v1→v2 entra agora.</pre>
+<span class="k">## Estado em execução</span>
+- Processos em segundo plano: shell_a3f → pytest --watch
+
+<span class="k">## Próxima ação exata</span>
+Revisar se a migração v1→v2 entra agora (precisa do ok do usuário).</pre>
     </div>
     <div class="card">
       <h3>📊 Statusline — checkpoint</h3>
@@ -334,16 +393,17 @@ nei@maquina:~/projetos/wifi <span class="s">Opus 5/low</span> ctx 10% 5h:24%→0
 <section id="roadmap"><div class="wrap">
   <span class="chip">Roadmap</span>
   <h2>Onde está e pra onde vai</h2>
-  <p class="sub">O projeto é pequeno de propósito: três skills disjuntas, sem sobreposição de gatilho.</p>
+  <p class="sub">O projeto é pequeno de propósito: skills disjuntas, sem sobreposição de gatilho.</p>
   <div class="phase"><div class="tag">Feito</div><div class="d"><strong>As três skills, em PT e EN</strong><span>session-handoff, session-statusline e memory-audit, com <code>SKILL.md</code> completo nos dois idiomas e READMEs detalhados em <code>skill/en/</code> e <code>skill/pt/</code> cobrindo decisões de design.</span></div></div>
   <div class="phase"><div class="tag">Feito</div><div class="d"><strong>Gatilhos sem sobreposição</strong><span>Cada skill tem um trabalho só. A statusline termina com uma recomendação que aponta pra próxima — o roteamento é explícito, não adivinhado.</span></div></div>
   <div class="phase"><div class="tag">Convenção</div><div class="d"><strong>Sincronizar en/pt ao editar</strong><span>As duas versões têm a mesma estrutura. Ao mexer numa skill, atualize as duas — é a regra de manutenção do repo.</span></div></div>
-  <div class="phase"><div class="tag">Próximo</div><div class="d"><strong>Persistência opcional do handoff</strong><span>Hoje a saída é só chat; pra guardar, você copia o texto. Um modo de gravar em arquivo é o candidato natural de evolução.</span></div></div>
+  <div class="phase"><div class="tag">Feito · out/2026</div><div class="d"><strong>Handoff que grava + prime</strong><span>O <code>session-handoff</code> passou a gravar em <code>handoffs/history/</code> + <code>handoffs/latest.md</code> (mesma versão do kit agente-claude-codex 1.2.1) e entrou o <code>prime</code>, que lê esse arquivo na sessão nova. Ciclo completo: handoff → <code>/clear</code> → <code>/prime</code>.</span></div></div>
+  <div class="phase"><div class="tag">Relacionado</div><div class="d"><strong>Execução Longa</strong><span>Hook que grava o handoff sozinho por faixa de contexto, arquivos de estado e <code>/goal</code> para trabalho de horas: <a href="https://inematds.github.io/execucao-longa/guia/" target="_blank" rel="noopener">guia Execução Longa</a>.</span></div></div>
 </div></section>
 
 <footer>
   <div class="wrap">
-    <div class="pill">Claude Code</div><div class="pill">Markdown + YAML frontmatter</div><div class="pill">Zero dependências</div><div class="pill">PT / EN</div>
+    <div class="pill">Claude Code</div><div class="pill">Markdown + YAML frontmatter</div><div class="pill">Zero dependências</div><div class="pill">PT / EN / ES</div>
     <p style="margin-top:18px">skillmanager3x · skills de gestão de sessão ·
       <a href="https://github.com/inematds/skillmanager3x">inematds/skillmanager3x</a> ·
       <a href="https://inema.club">INEMA.CLUB</a></p>

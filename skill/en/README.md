@@ -80,7 +80,7 @@ This prevents the next agent from treating a proposal as a fact.
 1. **Be explicit** when wrapping up: "vou dar /clear" or "faz handoff" — avoids wrong dispatch.
 2. **Mention the plan** if there is one: "let's hand off plan X" — the skill prioritizes listing the plan first under "Key files".
 3. **Check shell IDs** in the output: if you started background processes, they must appear under "Running state" with the kill command — without this, the next agent can't manage them.
-4. **Output is chat-only** — copy the text into a file if you want to persist it; the skill never writes by design.
+4. **Saves to a file** (since Oct/2026) — besides the chat, it writes `handoffs/history/<UTC>.md` + `handoffs/latest.md`. In the new session, after `/clear`, run `/prime` to resume. The old version was chat-only.
 
 ### To make statusline work well
 1. Use it **during** work, not at the end. If you've already decided to wrap up, go straight to handoff.
@@ -99,6 +99,6 @@ For the Claude Code harness to recognize the skills, they need to live in one of
 - **Global (all sessions):** `C:\Users\neima\.claude\skills\`
 - **Per project:** `<project>\.claude\skills\`
 
-Copy the three folders (`session-handoff`, `session-statusline`, `memory-audit`) to the chosen destination. Each folder with its `SKILL.md` inside — don't flatten.
+Copy the four folders (`session-handoff`, `prime`, `session-statusline`, `memory-audit`) to the chosen destination. Each folder with its `SKILL.md` inside — don't flatten.
 
 To verify they were registered, use `/skills` in Claude Code (or check the registry at the start of the conversation).
