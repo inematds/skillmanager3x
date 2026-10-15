@@ -3,15 +3,15 @@ name: session-handoff
 description: >-
   Use when the user wants to end a session and hand off context to a future agent. Triggers include "session handoff", "handoff", "wrap up", "wrap up session", "vou dar /clear", "encerrar sessão",
   "passar para outro agente", "resumo final antes de limpar", "summarize before clear". Produces a structured, sanitized handoff in chat and, when the project root has handoffs/, AGENTS.md or
-  CLAUDE.md (creating handoffs/history/ if missing), saves it as a new never-overwritten snapshot in handoffs/history/<UTC-stamp>.md and refreshes handoffs/latest.md, so a fresh agent in any runtime
-  can continue without losing continuity.
+  CLAUDE.md (creating handoffs/history/ if missing), saves it with scripts/handoff-grava.py as a never-overwritten snapshot handoffs/history/<UTC-stamp>-<subject>.md, keeps handoffs/latest.md as an
+  index of open work by subject (plus a full copy of the newest) and commits only those files (no push), so a fresh agent in any runtime can continue without losing continuity.
 ---
 
 # Session Handoff
 
 Produce a repeatable end-of-session summary so the user can run `/clear` (or switch runtimes: Claude ↔ Codex) without losing continuity. The next agent must be able to continue by reading only this summary and the files it points to.
 
-It is a **context-handoff artifact**, not a status report. The audience is a future agent instance, not a manager. This skill **does not authorize** publishing, committing, sending, uploading files, or continuing half-finished external actions.
+It is a **context-handoff artifact**, not a status report. The audience is a future agent instance, not a manager. This skill **does not authorize** publishing, pushing, sending, uploading files, or continuing half-finished external actions. The only commit it makes is the handoff itself, done by the script (only the snapshot and `latest.md`).
 
 ## When to invoke
 
@@ -20,6 +20,8 @@ User says: "session handoff", "handoff", "wrap up", "wrap up session", "vou dar 
 **`/clear` intent:**
 - Clear ("vou dar /clear", "vou limpar agora") with active work → run the handoff directly.
 - Vague ("maybe I'll clear") → ask once: "run handoff first?"
+
+**Requested by the hook (context band, compaction or continuous handoff) in the middle of a task:** it is not the end of the session. Save, report in one line and **continue the task the user asked for** to the end, in the same reply. Do not stop halfway, do not ask whether to continue and do not ask for `/clear`; suggest a new session only when the task is done.
 
 Do not invoke for "organize/optimize the session" (that is `session-statusline`) or for "analyze memory" / "CLAUDE.md" (that is `memory-audit`).
 
@@ -48,17 +50,21 @@ Before writing, check and state in its own section that the text **does not cont
 
 ## Where to save
 
-**Always** show the summary in chat. **In addition**, if the project root has `handoffs/` (portable core), `AGENTS.md` or `CLAUDE.md`, save it to a file — that is where `prime` reads from (`handoffs/latest.md`). If `handoffs/history/` does not exist, create it (`mkdir -p handoffs/history`); only the chat summary is lost on `/clear`, and the next session's `prime` finds nothing:
+**Always** show the summary in chat. **In addition**, if the project root has `handoffs/` (portable core), `AGENTS.md` or `CLAUDE.md`, save it to a file — that is where `prime` reads from (`handoffs/latest.md`). Only the chat summary is lost on `/clear`.
+
+**Always save through this skill's `scripts/handoff-grava.py`** (next to this SKILL.md; in Claude Code `~/.claude/skills/session-handoff/scripts/`, in Codex `~/.agents/skills/session-handoff/scripts/`). Do not create the snapshot by hand nor type a timestamp: the script uses the machine clock. On 2026-10-15 an agent put `T120000Z` on a file written at 07:45Z, and a parallel session overwrote another one's `latest.md`.
 
 1. **Resolve the project root** from the user's explicit context or from the repository root. If ambiguous, ask. Never use the home directory as the root.
-2. **Refuse symlinks and traversal**: `handoffs/`, `handoffs/history/`, `handoffs/latest.md` and the new file must not be symlinks nor leave the root once resolved. If any is, do not write: report it and show only in chat.
-3. **New snapshot, never overwritten:** `handoffs/history/YYYY-MM-DDTHHMMSSZ.md` with the current UTC time (e.g. `date -u +%Y-%m-%dT%H%M%SZ`). If the name already exists, use a suffix `-2`, `-3`… Create with exclusive write (fail if it exists), never edit or delete old snapshots.
-4. **Preserve the legacy once:** if `handoffs/latest.md` exists, is in the full-copy format and its content does not equal any file in `handoffs/history/`, first save it as `handoffs/history/<mtime-stamp>-anterior.md`.
-5. **Update `handoffs/latest.md`** (only after the snapshot was written successfully):
-   - default format of this kit: **full copy** of the new snapshot (compatible with `prime`, `readback-test.sh`, `check.sh` and any agent that reads `latest.md` as a document);
-   - if the existing `latest.md` is already a **one-line pointer** (`handoffs/history/<file>.md`, "Use Both" kit format), keep the format and write only the line with the new relative path.
-6. **Read back** the snapshot and `latest.md` and confirm they match (or that the pointer resolves to the new file inside the project).
-7. **Do not commit, push or upload** these files on behalf of this skill. Report both paths and remind the user to review before sharing with another provider.
+2. **Pick the subject (slug)**: run `python3 <script> --raiz <root> --listar`. If this session's work is already in the index, **reuse the same slug** (e.g. `rea-es`, never `rea-es-2` or `rea-es-closing`). New work: short slug, lowercase and hyphens. Several sessions may write to the same project at once; each one handles only its own subject.
+3. **Save**: `python3 <script> --raiz <root> --assunto <slug> < body.md` (the body may come via heredoc). If the work is finished (done, delivered or abandoned by the user), add `--fechado`: the snapshot is written and the subject leaves the index. The script:
+   - creates `handoffs/history/<YYYY-MM-DDTHHMMSSZ>-<slug>.md` with exclusive write (suffix `-2`… if it exists) and never edits an old snapshot;
+   - refuses symlinks and paths outside the root;
+   - preserves the legacy `latest.md` once (full copy not in `history/`) as `<mtime-stamp>-anterior.md`;
+   - rewrites `handoffs/latest.md` = **index of open work** (one line per subject: slug · snapshot · date) + **full copy** of the newest snapshot (anything reading `latest.md` as a document keeps working);
+   - reads back and checks;
+   - if the root is a git repository, makes **one commit with only the snapshot and `latest.md`** (`git commit -- <paths>`: whatever someone else left staged stays out), author = repo config. **Never pushes.** `--sem-commit` turns it off.
+4. **Check the script output** (snapshot, open subjects, commit line) and tell the user in one line. If it fails, show the error and leave the summary in chat; do not write by hand.
+5. **Push** stays with the user or the project's publishing flow. Remind them to review before sharing with another provider.
 
 ## Confidence markers
 
@@ -126,7 +132,7 @@ Paths: **inside the project, relative to the root** (the file travels between ma
 ## Rules
 
 1. **Never invent state.** A section without content gets "none" — do not omit sections. A stable structure is the point.
-2. **Never overwrite or delete** snapshots in `handoffs/history/`.
+2. **Never overwrite or delete** snapshots in `handoffs/history/`; write only through the script.
 3. **If a plan guided the session, cite it first** in the "Resume map".
 4. **Background process IDs are critical** — without them the next agent cannot find them.
 5. **No emojis, no hype, no retrospective** ("what went well / badly" does not belong).
