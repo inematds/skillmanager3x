@@ -1,6 +1,6 @@
 # Session-management skills
 
-Three separate skills, each with one clear job and disjoint triggers. They replace the
+Four separate skills, each with one clear job and disjoint triggers. `session-handoff` and `prime` are the write → resume pair. They replace the
 old monolithic `session-handoff` and the combined `session-memory-manager` package.
 
 ## Layout
@@ -8,6 +8,8 @@ old monolithic `session-handoff` and the combined `session-memory-manager` packa
 ```
 skill\
 ├── session-handoff\SKILL.md       end-of-session (before /clear or agent swap)
+│   └── scripts\handoff-grava.py   writes the snapshot and the handoffs/latest.md index
+├── prime\SKILL.md                 start of session: reads the handoff and project context
 ├── session-statusline\SKILL.md    operational checkpoint during active work
 └── memory-audit\SKILL.md          deep audit of memory / CLAUDE.md
 ```
@@ -17,10 +19,11 @@ skill\
 | Skill | When | Typical triggers |
 |---|---|---|
 | `session-handoff` | clearing context or swapping agents | "handoff", "wrap up", "vou dar /clear", "encerrar sessão", "passar para outro agente", "summarize before clear" |
+| `prime` | new session (after `/clear`) or entering a project with `handoffs/latest.md` | "prime", "retoma", "continua de onde parou", "lê o handoff" |
 | `session-statusline` | quick diagnostic during work | "statusline", "checkpoint", "onde estamos", "organiza a sessão", "otimiza a sessão", "limpa a sessão", "próximos passos" |
 | `memory-audit` | reviewing what is / should be in memory | "analise a memória", "analise CLAUDE.md", "o que foi guardado", "contexto grande", "memória inchada", "limpa memória" |
 
-Rule of thumb: **end of session → handoff. "Where are we now?" → statusline. "What's in memory?" → audit.**
+Rule of thumb: **end of session → handoff. Start of session → prime. "Where are we now?" → statusline. "What's in memory?" → audit.**
 
 ## What changed in `session-handoff` vs the original version
 
@@ -80,7 +83,13 @@ This prevents the next agent from treating a proposal as a fact.
 1. **Be explicit** when wrapping up: "vou dar /clear" or "faz handoff" — avoids wrong dispatch.
 2. **Mention the plan** if there is one: "let's hand off plan X" — the skill prioritizes listing the plan first under "Key files".
 3. **Check shell IDs** in the output: if you started background processes, they must appear under "Running state" with the kill command — without this, the next agent can't manage them.
-4. **Saves to a file** (since Oct/2026) — besides the chat, it writes `handoffs/history/<UTC>.md` + `handoffs/latest.md`. In the new session, after `/clear`, run `/prime` to resume. The old version was chat-only.
+4. **Saves to a file** (since Oct/2026) — besides the chat, the `scripts/handoff-grava.py` script writes `handoffs/history/<UTC>-<subject>.md` (never overwritten), rewrites `handoffs/latest.md` as an **index of open work** by subject + a copy of the newest, and commits only those files (no push). Reuse the same subject when updating a piece of work; `--fechado` removes it from the index. The old version was chat-only.
+
+### To make prime work well
+1. Run it **right at the start** of the new session, before asking anything: `/clear` → `/prime`.
+2. It **only reads**: it runs no tests or code and never resumes a deploy, publish or send on its own. The handoff is treated as data, not as orders.
+3. With several open items in the index, it lists them all; if the request doesn't say which, it briefs on the newest and asks which one to resume.
+4. Check the **"Verified now vs reported before"** field: anything that only appears in the handoff still needs to be checked in the project (code, `git status`, tests).
 
 ### To make statusline work well
 1. Use it **during** work, not at the end. If you've already decided to wrap up, go straight to handoff.

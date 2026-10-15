@@ -1,6 +1,6 @@
 # Skills de gestão de sessão
 
-Três skills separadas, cada uma com um job claro e gatilhos disjuntos. Substituem o
+Quatro skills separadas, cada uma com um job claro e gatilhos disjuntos. `session-handoff` e `prime` formam o par grava → retoma. Substituem o
 `session-handoff` monolítico antigo e o pacote combinado `session-memory-manager`.
 
 ## Estrutura
@@ -8,6 +8,8 @@ Três skills separadas, cada uma com um job claro e gatilhos disjuntos. Substitu
 ```
 skill\
 ├── session-handoff\SKILL.md       fim de sessão (antes de /clear ou troca de agente)
+│   └── scripts\handoff-grava.py   grava o snapshot e o índice handoffs/latest.md
+├── prime\SKILL.md                 início de sessão: lê o handoff e o contexto do projeto
 ├── session-statusline\SKILL.md    checkpoint operacional durante o trabalho
 └── memory-audit\SKILL.md          auditoria profunda de memória / CLAUDE.md
 ```
@@ -17,10 +19,11 @@ skill\
 | Skill | Quando | Gatilhos típicos |
 |---|---|---|
 | `session-handoff` | vai limpar contexto ou trocar de agente | "handoff", "wrap up", "vou dar /clear", "encerrar sessão", "passar para outro agente", "resumo final antes de limpar" |
+| `prime` | começou sessão nova (depois do `/clear`) ou entrou num projeto com `handoffs/latest.md` | "prime", "retoma", "continua de onde parou", "lê o handoff" |
 | `session-statusline` | quer um diagnóstico rápido durante o trabalho | "statusline", "checkpoint", "onde estamos", "organiza a sessão", "otimiza a sessão", "limpa a sessão", "próximos passos" |
 | `memory-audit` | quer revisar o que está/deveria estar na memória | "analise a memória", "analise CLAUDE.md", "o que foi guardado", "contexto grande", "memória inchada", "limpa memória" |
 
-Regra geral: **se for fim de sessão → handoff. Se for "como estamos agora" → statusline. Se for "o que tem na memória" → audit.**
+Regra geral: **se for fim de sessão → handoff. Se for começo de sessão → prime. Se for "como estamos agora" → statusline. Se for "o que tem na memória" → audit.**
 
 ## O que mudou em `session-handoff` vs versão original
 
@@ -80,7 +83,13 @@ Isso evita que o próximo agente trate proposta como fato.
 1. **Diga claramente** quando estiver encerrando: "vou dar /clear" ou "faz handoff" — evita disparo errado.
 2. **Mencione o plano** se houver um: "fizemos handoff do plano X" — a skill prioriza listar o plano primeiro em "Key files".
 3. **Confira shell IDs** no output: se você rodou processos em background, eles têm que aparecer em "Running state" com kill command — sem isso o próximo agente não consegue gerenciá-los.
-4. **Grava em arquivo** (desde out/2026) — além do chat, salva em `handoffs/history/<UTC>.md` + `handoffs/latest.md`. Na sessão nova, depois do `/clear`, rode `/prime` para retomar. A versão antiga era só chat.
+4. **Grava em arquivo** (desde out/2026) — além do chat, o script `scripts/handoff-grava.py` salva `handoffs/history/<UTC>-<assunto>.md` (nunca sobrescreve), reescreve `handoffs/latest.md` como **índice dos trabalhos abertos** por assunto + cópia do mais novo, e faz commit só desses arquivos (sem push). Reuse o mesmo assunto ao atualizar um trabalho; `--fechado` tira do índice. A versão antiga era só chat.
+
+### Para prime funcionar bem
+1. Rode **logo no início** da sessão nova, antes de pedir qualquer coisa: `/clear` → `/prime`.
+2. Ele **só lê**: não roda teste nem código e nunca retoma deploy, publicação ou envio sozinho. O handoff é tratado como dado, não como ordem.
+3. Com vários trabalhos abertos no índice, ele lista todos; se o pedido não disser qual, faz o briefing do mais recente e pergunta qual retomar.
+4. Confira o campo **"Verificado agora x relatado antes"**: o que só consta do handoff ainda precisa ser conferido no projeto (código, `git status`, testes).
 
 ### Para statusline funcionar bem
 1. Use **durante** o trabalho, não no fim. Se você já decidiu encerrar, use handoff direto.
