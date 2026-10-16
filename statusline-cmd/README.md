@@ -7,17 +7,19 @@
 Barra de status com contexto, modelo/esforço, limites de uso e tokens do dia:
 
 ```
-nmaldaner@spark-922b:/home/nmaldaner/projetos/wifi Opus 5/low ctx 10% 5h:24%→00:10 w:29%→10/08 21:00 d:109.6M
+nmaldaner@spark-922b:/home/nmaldaner/projetos/wifi → portal Opus 5.5/medium ctx 24% 5h:30%→03:59 w:62% F:1%→19/10 20:59 d:28.8M
 ```
 
 | Campo | Significado |
 |---|---|
-| `user@host:cwd` | usuário, máquina e diretório atual |
-| `Opus 5/low` | modelo e nível de esforço da sessão (acompanha o `/model`) |
-| `ctx 10%` | quanto da janela de contexto já foi usado |
-| `5h:24%→00:10` | limite de 5 horas usado e hora do reset |
-| `w:29%→10/08 21:00` | limite semanal usado e reset |
-| `d:109.6M` | tokens somados hoje (todas as sessões locais) |
+| `user@host:cwd` | usuário, máquina e pasta onde a sessão foi aberta (fica fixa) |
+| `→ portal` | **projeto ativo**: aparece em amarelo quando o Claude está mexendo em outro projeto de `~/projetos` pelo caminho completo (lido dos últimos comandos da sessão, sem gastar crédito) |
+| `Opus 5.5/medium` | modelo e nível de esforço da sessão (acompanha o `/model`) |
+| `ctx 24%` | quanto da janela de contexto já foi usado |
+| `5h:30%→03:59` | limite de 5 horas usado e hora do reset |
+| `w:62%` | limite semanal geral usado |
+| `F:1%→19/10 20:59` | limite semanal **por modelo** (inicial do modelo; `!` se em alerta) e reset |
+| `d:28.8M` | tokens somados hoje (todas as sessões locais) |
 
 ## Instalar
 
@@ -37,6 +39,43 @@ O instalador copia o script para `~/.claude/statusline-command.sh`, registra o b
 A barra aparece no próximo render — nenhuma sessão precisa ser reiniciada.
 
 Remover: `bash install.sh --uninstall` (tira só a entrada `statusLine`).
+
+## Trocar de projeto: `cc`
+
+A sessão do Claude Code não muda de pasta depois de aberta (um `cd` para fora volta
+sozinho). Trocar de projeto de verdade é abrir o Claude na outra pasta — e o
+`cc-projeto.sh` faz isso numa palavra, sem gastar crédito:
+
+```bash
+echo "source $HOME/skillmanager3x/statusline-cmd/cc-projeto.sh" >> ~/.bashrc   # ajuste o caminho do clone
+```
+
+| Você digita | O que acontece |
+|---|---|
+| `cc portal` | entra em `~/projetos/portal` e abre o Claude |
+| `cc port` | nome parcial: um achado vai direto; vários mostram lista numerada |
+| `cc portal -c` | idem, continuando a última conversa daquele projeto |
+| `cc` | abre o Claude na pasta atual |
+
+Abre pelo `~/projetos/cc.sh` se ele existir, senão pelo `cc.sh` desta pasta, senão pelo
+`claude`. `CC_BASE` e `CC_LAUNCHER` mudam a pasta dos projetos e o lançador.
+
+## Lançadores: `cc` e `cx` (Linux e Windows)
+
+Atalhos de uma palavra para abrir as CLIs na pasta atual com as flags que uso no dia a dia.
+Argumentos extras passam adiante (ex.: `cc.sh -c` continua a última conversa).
+
+| Arquivo | Abre | Flags |
+|---|---|---|
+| `cc.sh` / `cc.bat` | Claude Code | `--chrome --dangerously-skip-permissions --exclude-dynamic-system-prompt-sections`, saída de até 64k tokens |
+| `cx.sh` / `cx.bat` | Codex CLI | `--dangerously-bypass-approvals-and-sandbox` |
+
+> **Atenção:** essas flags fazem a CLI rodar comandos e editar arquivos **sem pedir
+> permissão**. Use só em máquina e projetos seus.
+
+Linux: copie `cc.sh`/`cx.sh` para a pasta dos projetos (ex.: `~/projetos`) e rode
+`../cc.sh` de dentro do projeto — ou use a função `cc` acima. Windows: coloque
+`cc.bat`/`cx.bat` numa pasta do `PATH` e digite `cc` ou `cx` no terminal.
 
 ## Requisitos
 

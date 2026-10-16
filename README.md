@@ -44,8 +44,11 @@ skill/
     └── memory-audit/SKILL.md
 
 statusline-cmd/          barra de status do terminal (bash, opcional)
-├── statusline-command.sh
+├── statusline-command.sh   barra (com "→ projeto ativo")
 ├── install.sh
+├── cc-projeto.sh           função `cc <projeto>`: entra na pasta e abre o Claude
+├── cc.sh  cc.bat           lançador do Claude Code (Linux / Windows)
+├── cx.sh  cx.bat           lançador do Codex CLI (Linux / Windows)
 └── README.md
 ```
 
@@ -231,17 +234,21 @@ Para verificar que registrou, use `/skills` no Claude Code.
 Além das skills, o repo traz uma **statusline** para o Claude Code: a linha fixa que aparece abaixo do input, mostrando onde você está, com qual modelo, quanto de contexto sobrou e quanto do seu limite já foi.
 
 ```
-nmaldaner@spark-922b:~/projetos/wifi Opus 5/low ctx 10% 5h:24%→00:10 w:29%→10/08 21:00 d:109.6M
+nmaldaner@spark-922b:~/projetos/wifi → portal Opus 5.5/medium ctx 24% 5h:30%→03:59 w:62% F:1%→19/10 20:59 d:28.8M
 ```
 
 | Campo | Significado |
 |---|---|
-| `user@host:cwd` | usuário, máquina e diretório atual |
-| `Opus 5/low` | modelo e nível de esforço da sessão (acompanha o `/model`) |
-| `ctx 10%` | quanto da janela de contexto já foi usado |
-| `5h:24%→00:10` | limite de 5 horas usado e hora do reset |
-| `w:29%→10/08 21:00` | limite semanal usado e reset |
-| `d:109.6M` | tokens somados hoje, em todas as sessões locais |
+| `user@host:cwd` | usuário, máquina e pasta onde a sessão foi aberta (fica fixa) |
+| `→ portal` | **projeto ativo**: em amarelo quando o Claude está mexendo em outro projeto de `~/projetos` (sem gastar crédito) |
+| `Opus 5.5/medium` | modelo e nível de esforço da sessão (acompanha o `/model`) |
+| `ctx 24%` | quanto da janela de contexto já foi usado |
+| `5h:30%→03:59` | limite de 5 horas usado e hora do reset |
+| `w:62%` | limite semanal geral usado |
+| `F:1%→19/10 20:59` | limite semanal **por modelo** (inicial do modelo) e reset |
+| `d:28.8M` | tokens somados hoje, em todas as sessões locais |
+
+Junto vêm a função **`cc <projeto>`** (entra na pasta do projeto e abre o Claude; aceita nome parcial) e os lançadores **`cc.sh`/`cc.bat`** (Claude Code) e **`cx.sh`/`cx.bat`** (Codex CLI) para Linux e Windows.
 
 **O comando:**
 

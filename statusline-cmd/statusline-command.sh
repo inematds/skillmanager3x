@@ -1,5 +1,5 @@
 #!/bin/bash
-# Statusline: user@host:cwd · ctx N% · 5h:X% · w:Y% · d:TOK
+# Statusline: user@host:cwd · ctx N% · 5h:X% · w:Y% F:Z% · d:TOK
 #
 # 5h% e w% vêm do endpoint oficial do Claude Code:
 #   GET https://api.anthropic.com/api/oauth/usage
@@ -17,6 +17,8 @@
 
 set -u
 input=$(cat)
+# Dump do payload cru pra inspecionar campos novos (modelo/effort). Barato: 1 arquivo.
+printf '%s' "$input" > "/tmp/cc_statusline_input_${UID}.json" 2>/dev/null
 cwd=$(echo "$input" | jq -r '.cwd // ""' 2>/dev/null)
 transcript=$(echo "$input" | jq -r '.transcript_path // ""' 2>/dev/null)
 
@@ -87,6 +89,13 @@ if [[ -f "$LIMITS_CACHE" ]]; then
   [[ -n "$h5_iso" ]] && h5_reset=$(date -d "$h5_iso" +%H:%M 2>/dev/null)
   # weekly reset: dia/mês hora local (dd/mm HH:MM)
   [[ -n "$w_iso"  ]] && w_reset=$(date -d "$w_iso"  +"%d/%m %H:%M" 2>/dev/null)
+  # Limite semanal POR MODELO (2026-09-14): a API passou a mandar .limits[] com
+  # kind=weekly_scoped (ex.: Fable) além do weekly_all. O scoped é o que trava
+  # de verdade quando is_active=true, e .seven_day só reflete o weekly_all.
+  # Mostra como "<Inicial>:<pct>%" e acrescenta "!" se severity != normal.
+  ws=$(jq -r 'try ([.limits[]? | select(.kind=="weekly_scoped")] | first
+       | "\(.scope.model.display_name // "M" | .[0:1]):\(.percent | tostring)%\(if .severity != "normal" then "!" else "" end)")
+       catch empty' "$LIMITS_CACHE" 2>/dev/null)
 fi
 
 # ── Daily tokens (JSONL local, cache 60s) ────────────────────────────────
@@ -147,9 +156,24 @@ if [[ -n "$h5_pct" ]]; then
 fi
 if [[ -n "$w_pct" ]]; then
   limits+=" w:${w_pct}%"
+  [[ -n "${ws:-}" ]] && limits+=" ${ws}"
   [[ -n "$w_reset" ]] && limits+="→${w_reset}"
 fi
 limits+=" d:$(fmt "$d")"
 
-printf "\033[01;32m%s@%s\033[00m:\033[01;34m%s\033[00m\033[38;5;180m%s\033[00m%s\033[38;5;244m%s\033[00m" \
-  "$(whoami)" "$(hostname -s)" "$cwd" "$me" "$ctx" "$limits"
+# ── Projeto ativo (2026-10-16) ───────────────────────────────────────────
+# A sessão fica presa na pasta onde abriu; quando o trabalho vai pra outro
+# projeto (~/projetos/<X>) pelo caminho completo, mostra "→ X" em amarelo.
+# Fonte: últimos 50 tool_use do transcript, primeiro ~/projetos/<X> que é pasta.
+ativo=""
+if [[ -n "$transcript" && -f "$transcript" ]]; then
+  while read -r p; do
+    [[ -d "$p" ]] && { ativo=$(basename "$p"); break; }
+  done < <(tac "$transcript" 2>/dev/null | grep -m50 '"tool_use"' | \
+           grep -oE "$HOME/projetos/[A-Za-z0-9._-]+")
+fi
+proj=""
+[[ -n "$ativo" && "$HOME/projetos/$ativo" != "$cwd" ]] && proj=" → ${ativo}"
+
+printf "\033[01;32m%s@%s\033[00m:\033[01;34m%s\033[00m\033[01;33m%s\033[00m\033[38;5;180m%s\033[00m%s\033[38;5;244m%s\033[00m" \
+  "$(whoami)" "$(hostname -s)" "$cwd" "$proj" "$me" "$ctx" "$limits"
