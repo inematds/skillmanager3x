@@ -152,4 +152,4 @@ fi
 limits+=" d:$(fmt "$d")"
 
 printf "\033[01;32m%s@%s\033[00m:\033[01;34m%s\033[00m\033[38;5;180m%s\033[00m%s\033[38;5;244m%s\033[00m" \
-  "$(whoami)" "$(hostname -s)" "$cwd" "$me" "$ctx" "$limits"
+  "$(whoami)" "$(hostname 2>/dev/null | cut -d. -f1)" "$cwd" "$me" "$ctx" "$limits"
