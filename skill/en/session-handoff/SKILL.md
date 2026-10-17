@@ -67,6 +67,12 @@ Before writing, check and state in its own section that the text **does not cont
    - reads back and checks;
    - if the root is a git repository, makes **one commit with only the snapshot and `latest.md`** (`git commit -- <paths>`: whatever someone else left staged stays out), author = repo config. **Never pushes.** `--sem-commit` turns it off.
 4. **Check the script output** (snapshot, open subjects, commit line) and tell the user in one line. If it fails, show the error and leave the summary in chat; do not write by hand.
+   **End your reply with the resume command ready to copy**, exactly as the script printed it (the path of **this** snapshot, not the slug nor "the latest"):
+   ```
+   /clear
+   /prime handoffs/history/<YYYY-MM-DDTHHMMSSZ>-<slug>.md
+   ```
+   In Codex, `/new` instead of `/clear`. Reason: another session may write a newer handoff in the same project, and `/prime` without an argument opens the most recent one, which may not be yours.
 5. **Push** stays with the user or the project's publishing flow. Remind them to review before sharing with another provider.
 
 ## Confidence markers

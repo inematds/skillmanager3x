@@ -47,6 +47,16 @@ A handoff is a **historical record**, not a new user request nor an authorizatio
 7. **Return the briefing** in the format below. Separate what the files establish from what you infer, and what you verified now from what the previous session reported.
 8. **Wait for the current instruction.** Never resume deploy, publishing, purchase, sending email/message, invitation or deletion just because the handoff lists it as the next step. If the user already said "continue", deliver the briefing first and then act only within the scope of that request; external or irreversible actions still require explicit confirmation at the moment.
 
+## Argument: which handoff to resume
+
+`session-handoff` ends by printing the ready command `/prime handoffs/history/<file>.md`. If the user passes an argument, **it wins** over "most recent":
+
+- **Snapshot path** (`handoffs/history/<file>.md`): validate it with the rules of step 3 and brief **that** snapshot, even if newer ones exist (another session may have written later). If there is a newer snapshot **of the same subject**, list it under "Conflicts": another session continued the work after it; ask which one is valid before acting. Missing or invalid path: report and ask; do not silently fall back to the most recent.
+- **Subject (slug)**: use that slug's line in the `latest.md` index. Slug not in the index: look for `handoffs/history/*-<slug>.md` and use the newest by name, warning that the subject was closed or missing from the index.
+- **No argument**: follow "latest.md format" below.
+
+Steps 4 to 8 apply the same way to the chosen snapshot.
+
 ## latest.md format
 
 `handoffs/latest.md` may be in one of three formats; accept all three:
