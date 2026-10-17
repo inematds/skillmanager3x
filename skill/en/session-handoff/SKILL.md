@@ -21,6 +21,8 @@ User says: "session handoff", "handoff", "wrap up", "wrap up session", "vou dar 
 - Clear ("vou dar /clear", "vou limpar agora") with active work → run the handoff directly.
 - Vague ("maybe I'll clear") → ask once: "run handoff first?"
 
+**Copy of an idle session (hook-longrun 1.5.1+: the request starts with "A sessão ficou parada"):** you are a copy (`--fork-session`) opened only to save the handoff. Save it with `handoff-grava.py`, reply "Handoff atualizado: <file>" and stop: do not continue any task, do not edit other files, do not push.
+
 **Requested by the hook (context band, compaction or continuous handoff) in the middle of a task:** it is not the end of the session. Save, report in one line and **continue the task the user asked for** to the end, in the same reply. Do not stop halfway, do not ask whether to continue and do not ask for `/clear`; suggest a new session only when the task is done.
 
 Do not invoke for "organize/optimize the session" (that is `session-statusline`) or for "analyze memory" / "CLAUDE.md" (that is `memory-audit`).
@@ -61,6 +63,7 @@ Before writing, check and state in its own section that the text **does not cont
    - refuses symlinks and paths outside the root;
    - preserves the legacy `latest.md` once (full copy not in `history/`) as `<mtime-stamp>-anterior.md`;
    - rewrites `handoffs/latest.md` = **index of open work** (one line per subject: slug · snapshot · date) + **full copy** of the newest snapshot (anything reading `latest.md` as a document keeps working);
+   - appends to the end of the snapshot the **state block** (`<!-- handoff-estado:inicio/fim -->`): current commit (HEAD) and sha256 of the files cited in backticks in the body and of the dirty files outside `handoffs/`. The script writes it, not you: **do not write this block by hand** (if it comes in the body, the script drops it). It is what lets the next agent know whether the handoff went stale (`--conferir`);
    - reads back and checks;
    - if the root is a git repository, makes **one commit with only the snapshot and `latest.md`** (`git commit -- <paths>`: whatever someone else left staged stays out), author = repo config. **Never pushes.** `--sem-commit` turns it off.
 4. **Check the script output** (snapshot, open subjects, commit line) and tell the user in one line. If it fails, show the error and leave the summary in chat; do not write by hand.
@@ -71,6 +74,8 @@ Before writing, check and state in its own section that the text **does not cont
 - `[confirmed]` — fact verified in this session
 - `[unverified]` — likely, but not confirmed
 - `[?]` — uncertain, depends on a check by the next agent
+
+**Pointers, not prose.** Every `[confirmed]` carries evidence the next agent can check without trusting you: `commit <hash>`, `test: <command> → <result>` or `file: <relative path>`. Without evidence, the item is `[unverified]`. The agent writing the handoff is the same one that may have drifted; the proof has to live outside the text (git, test, file).
 
 ## Template — use exactly this structure, every time
 
@@ -86,7 +91,7 @@ Paths: **inside the project, relative to the root** (the file travels between ma
 <from tasks/current.md, with done criteria>
 
 ## Accepted state
-- [confirmed] <change> — <where it is, relative path>
+- [confirmed] <change> — <where it is, relative path> — evidence: <commit <hash> | test: <command> → <result> | file: <path>>
 - (or "none")
 
 ## Proposed / attempted, not confirmed
@@ -125,6 +130,13 @@ Paths: **inside the project, relative to the root** (the file travels between ma
 ## Resume map
 - `<relative path>` — <why read first> (3 to 6 files at most)
 
+## Test questions
+1. What is the current task and its done criterion? → <short answer> — source: <relative path or commit>
+2. What was the last decision and why? → <short answer> — source: <…>
+3. What must not change (user constraint or lock)? → <short answer> — source: <…>
+4. What is half-done? → <short answer> — source: <…>
+5. What is the next action and does it need approval? → <short answer> — source: <…>
+
 ## Sharing check
 - No secrets, tokens, cookies, personal data or private endpoints: <yes / what was omitted and through which channel to pass it>
 ```
@@ -138,3 +150,4 @@ Paths: **inside the project, relative to the root** (the file travels between ma
 5. **No emojis, no hype, no retrospective** ("what went well / badly" does not belong).
 6. **No recommendations beyond the "Exact next action".** The next agent decides.
 7. **A handoff is not authorization**: do not write the next action as an order to deploy, publish, send or buy without saying it needs user confirmation.
+8. **Test questions**: always all 5, in this order, one-line answers. The source is **a project file or a commit, never the handoff itself** (`decisions.md`, `tasks/current.md`, `goal.md`, `CLAUDE.md`, the commit…). If the answer only exists in the conversation, first save it to a project file (e.g. the decision in `decisions.md`) and point to it, or write "source: only in this conversation". They are how `prime` (and a session resumed after compaction) measures what was recovered: whoever resumes answers from the files and compares.

@@ -21,6 +21,8 @@ Usuário diz: "session handoff", "handoff", "wrap up", "wrap up session", "vou d
 - Clara ("vou dar /clear", "vou limpar agora") com trabalho ativo → rode o handoff direto.
 - Vaga ("talvez eu limpe") → pergunte uma vez: "rodar handoff antes?"
 
+**Cópia da sessão parada (hook-longrun 1.5.1+: o pedido começa com "A sessão ficou parada"):** você é uma cópia (`--fork-session`) aberta só para gravar o handoff. Grave com o `handoff-grava.py`, responda "Handoff atualizado: <arquivo>" e pare: não continue tarefa nenhuma, não edite outros arquivos, não faça push.
+
 **Pedido pelo hook (faixa de contexto, compactação ou handoff contínuo) no meio de uma tarefa:** não é fim de sessão. Grave, avise em uma linha e **continue a tarefa que o usuário pediu** até o fim, na mesma resposta. Não pare no meio, não pergunte se continua e não peça `/clear`; sessão nova só se sugere quando a tarefa terminar.
 
 Não invoque para "organiza/otimiza a sessão" (isso é `session-statusline`) nem para "analise a memória" / "CLAUDE.md" (isso é `memory-audit`).
@@ -61,6 +63,7 @@ Antes de gravar, confira e declare na seção própria que o texto **não conté
    - recusa symlink e caminho fora da raiz;
    - preserva uma vez o `latest.md` legado (cópia integral que não está em `history/`) como `<carimbo-do-mtime>-anterior.md`;
    - reescreve `handoffs/latest.md` = **índice de trabalhos abertos** (uma linha por assunto: slug · snapshot · data) + **cópia integral** do snapshot mais novo (quem lê `latest.md` como documento continua funcionando);
+   - anexa ao fim do snapshot o **bloco de estado** (`<!-- handoff-estado:inicio/fim -->`): commit atual (HEAD) e sha256 dos arquivos citados em crase no corpo e dos arquivos sujos fora de `handoffs/`. Quem grava é o script, não você: **não escreva esse bloco à mão** (se vier no corpo, o script descarta). É ele que deixa o próximo agente saber se o handoff ficou velho (`--conferir`);
    - lê de volta e confere;
    - se a raiz for repositório git, faz **um commit só com o snapshot e o `latest.md`** (`git commit -- <caminhos>`: o que outra pessoa deixou staged fica fora), autor = config do repo. **Nunca faz push.** `--sem-commit` desliga.
 4. **Confira a saída** do script (snapshot, assuntos abertos, linha do commit) e informe ao usuário em uma linha. Se ele falhar, mostre o erro e deixe o resumo no chat; não grave à mão.
@@ -71,6 +74,8 @@ Antes de gravar, confira e declare na seção própria que o texto **não conté
 - `[confirmed]` — fato verificado nesta sessão
 - `[unverified]` — provável, mas não confirmado
 - `[?]` — incerto, depende de checagem pelo próximo agente
+
+**Ponteiro, não prosa.** Todo `[confirmed]` leva a evidência que o próximo agente confere sem confiar em você: `commit <hash>`, `teste: <comando> → <resultado>` ou `arquivo: <caminho relativo>`. Sem evidência, o item é `[unverified]`. Quem escreve o handoff é o mesmo agente que pode ter se perdido; a prova tem de estar fora do texto (git, teste, arquivo).
 
 ## Modelo — use exatamente esta estrutura, toda vez
 
@@ -86,7 +91,7 @@ Caminhos: **dentro do projeto, relativos à raiz** (o arquivo viaja entre máqui
 <de tasks/current.md, com critério de pronto>
 
 ## Estado aceito
-- [confirmed] <mudança> — <onde está, caminho relativo>
+- [confirmed] <mudança> — <onde está, caminho relativo> — evidência: <commit <hash> | teste: <comando> → <resultado> | arquivo: <caminho>>
 - (ou "nenhum")
 
 ## Proposto / tentado, não confirmado
@@ -125,6 +130,13 @@ Caminhos: **dentro do projeto, relativos à raiz** (o arquivo viaja entre máqui
 ## Mapa de retomada
 - `<caminho relativo>` — <por que ler primeiro> (3 a 6 arquivos no máximo)
 
+## Perguntas-teste
+1. Qual é a tarefa atual e o critério de pronto? → <resposta curta> — fonte: <caminho relativo ou commit>
+2. Qual foi a última decisão e por quê? → <resposta curta> — fonte: <…>
+3. O que não pode mudar (restrição do usuário ou trava)? → <resposta curta> — fonte: <…>
+4. O que está pela metade? → <resposta curta> — fonte: <…>
+5. Qual é a próxima ação e ela precisa de aprovação? → <resposta curta> — fonte: <…>
+
 ## Checagem de compartilhamento
 - Sem segredos, tokens, cookies, dados pessoais ou endpoints privados: <sim / o que foi omitido e por qual canal passar>
 ```
@@ -138,3 +150,4 @@ Caminhos: **dentro do projeto, relativos à raiz** (o arquivo viaja entre máqui
 5. **Sem emojis, sem hype, sem retrospectiva** ("o que foi bem / mal" não entra).
 6. **Sem recomendações além da "Próxima ação exata".** O próximo agente decide.
 7. **Handoff não é autorização**: não escreva a próxima ação como ordem para deploy, publicação, envio ou compra sem dizer que precisa de confirmação do usuário.
+8. **Perguntas-teste**: sempre as 5, nesta ordem, com resposta de uma linha. A fonte é **um arquivo do projeto ou um commit, nunca o próprio handoff** (`decisions.md`, `tasks/current.md`, `goal.md`, `CLAUDE.md`, o commit…). Se a resposta só existe na conversa, grave-a antes num arquivo do projeto (ex.: a decisão em `decisions.md`) e aponte para ele, ou escreva "fonte: só nesta conversa". É por elas que o `prime` (e a sessão retomada depois de compactar) mede o que foi recuperado: quem retoma responde pelos arquivos e compara.
