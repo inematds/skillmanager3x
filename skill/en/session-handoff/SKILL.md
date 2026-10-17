@@ -59,6 +59,8 @@ Before writing, check and state in its own section that the text **does not cont
 1. **Resolve the project root** from the user's explicit context or from the repository root. If ambiguous, ask. Never use the home directory as the root.
 2. **Pick the subject (slug)**: run `python3 <script> --raiz <root> --listar`. If this session's work is already in the index, **reuse the same slug** (e.g. `rea-es`, never `rea-es-2` or `rea-es-closing`). New work: short slug, lowercase and hyphens. Several sessions may write to the same project at once; each one handles only its own subject.
 3. **Save**: `python3 <script> --raiz <root> --assunto <slug> < body.md` (the body may come via heredoc). If the work is finished (done, delivered or abandoned by the user), add `--fechado`: the snapshot is written and the subject leaves the index. The script:
+   **Work in another repository** (the session is open in one project, e.g. `~/projetos/wifi`, but edits another, e.g. `~/projetos/robot`): add `--repo <path>` (one per repo; up to 5). The state block then also stores that repo's commit and changed files, and `--conferir` checks it too. Cite the repo path in the body, under "Project and scope".
+   **Script warnings** (`aviso: …` in the output): the body cites another repo without `--repo`, or the Test questions section is missing. Fix it and write again (the previous snapshot stays in history; that is normal).
    - creates `handoffs/history/<YYYY-MM-DDTHHMMSSZ>-<slug>.md` with exclusive write (suffix `-2`… if it exists) and never edits an old snapshot;
    - refuses symlinks and paths outside the root;
    - preserves the legacy `latest.md` once (full copy not in `history/`) as `<mtime-stamp>-anterior.md`;
