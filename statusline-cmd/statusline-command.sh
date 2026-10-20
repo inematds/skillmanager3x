@@ -103,18 +103,24 @@ CACHE="/tmp/cc_usage_${UID}.txt"
 refresh=1
 if [[ -f "$CACHE" ]]; then
   age=$(( $(date +%s) - $(stat -c %Y "$CACHE" 2>/dev/null || echo 0) ))
-  [[ $age -lt 60 ]] && refresh=0
+  [[ $age -lt 300 ]] && refresh=0
 fi
+# 20/10/2026: antes relia 8 GB de JSONL a cada 60 s com jq -s (tudo na RAM) e sem trava;
+# as sessões empilharam cópias até ~74 GB e travaram a máquina. Agora: trava única,
+# só arquivos de hoje, soma em streaming (sem -s), teto de tempo/memória e prioridade baixa.
 if [[ $refresh -eq 1 ]]; then
   T=$(date +%Y-%m-%d)
   (
+    exec 9>"/tmp/cc_usage_${UID}.lock"
+    flock -n 9 || exit 0
+    touch "$CACHE" 2>/dev/null
+    ulimit -v 2000000
     tmp=$(mktemp)
-    find "$HOME/.claude/projects" -name "*.jsonl" -mtime -2 -print0 2>/dev/null | \
-      xargs -0 cat 2>/dev/null | \
-      jq -R 'fromjson? | select(.timestamp) | {day: .timestamp[0:10], u: (.message.usage // {})}' | \
-      jq -s --arg t "$T" -r '
-        def sum: map((.u.input_tokens // 0) + (.u.output_tokens // 0) + (.u.cache_creation_input_tokens // 0)) | add // 0;
-        "\([.[] | select(.day == $t)] | sum)"
+    find "$HOME/.claude/projects" -name "*.jsonl" -newermt "$T 00:00" -print0 2>/dev/null | \
+      timeout 120 nice -n 19 ionice -c3 xargs -0 cat 2>/dev/null | \
+      timeout 120 nice -n 19 jq -nR --arg t "$T" -r '
+        reduce (inputs | fromjson? | select(.timestamp? and (.timestamp[0:10] == $t)) | (.message.usage // {})) as $u
+          (0; . + ($u.input_tokens // 0) + ($u.output_tokens // 0) + ($u.cache_creation_input_tokens // 0))
       ' > "$tmp" 2>/dev/null
     [[ -s "$tmp" ]] && mv "$tmp" "$CACHE" || rm -f "$tmp"
   ) &
